@@ -1,29 +1,31 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:uuid/uuid.dart';
+import '../../../core/database/database_service.dart';
 import '../data/models/cart_item.dart';
-import '../data/models/customer_model.dart';
+import '../data/models/cari_model.dart';
 import '../data/models/product_model.dart';
 import '../data/models/sale_model.dart';
 
-// ── Enums ─────────────────────────────────────────────────────────────────────
-enum BarcodeState { idle, scanning, found, notFound }
-enum TerminalMode  { sale, report }
+export '../data/models/sale_model.dart' show OdemeTip;
+export '../data/models/cari_model.dart' show CariModel, CariTip;
 
-// ── TerminalViewModel ─────────────────────────────────────────────────────────
+// ── Enums ──────────────────────────────────────────────────────────────────────
+enum BarcodeState { idle, scanning, found, notFound }
+
+// ── TerminalViewModel ──────────────────────────────────────────────────────────
 
 class TerminalViewModel extends ChangeNotifier {
-  final _uuid = const Uuid();
+  final _db = DatabaseService.instance;
 
   // ─── Barkod buffer (USB Keyboard Wedge) ───────────────────────────────────
   final StringBuffer _barcodeBuffer = StringBuffer();
-  Timer? _barcodeTimer;
+  Timer?             _barcodeTimer;
   static const _barcodeTimeout = Duration(milliseconds: 100);
 
   BarcodeState _barcodeState = BarcodeState.idle;
-  String _statusMessage      = '🟢 Barkod okuyucu hazır';
-  bool   _statusIsError      = false;
+  String       _statusMessage = '🟢 Barkod okuyucu hazır';
+  bool         _statusIsError = false;
 
   BarcodeState get barcodeState  => _barcodeState;
   String       get statusMessage => _statusMessage;
@@ -41,7 +43,7 @@ class TerminalViewModel extends ChangeNotifier {
   bool               get loading          => _loading;
 
   List<String> get categories => _allProducts
-      .map((p) => p.category)
+      .map((p) => p.kategori)
       .where((c) => c.isNotEmpty)
       .toSet()
       .toList()
@@ -58,107 +60,110 @@ class TerminalViewModel extends ChangeNotifier {
   double         get cartTotal     => _cart.fold(0.0, (s, i) => s + i.subtotal);
   bool           get cartEmpty     => _cart.isEmpty;
 
-  // ─── Müşteri ───────────────────────────────────────────────────────────────
-  List<CustomerModel> _customers = [];
-  CustomerModel?      _selectedCustomer;
+  // ─── Cari (Müşteri) ────────────────────────────────────────────────────────
+  List<CariModel> _cariler      = [];
+  CariModel?      _selectedCari;
 
-  List<CustomerModel> get customers        => _customers;
-  CustomerModel?      get selectedCustomer => _selectedCustomer;
+  List<CariModel> get cariler      => _cariler;
+  CariModel?      get selectedCari => _selectedCari;
 
-  // (Kamera - Windows'ta desteklenmiyor; F4 = Manuel barkod dialog)
+  // ── Günlük rapor (DB'den) ─────────────────────────────────────────────────
+  List<SaleModel> _dailySales = [];
+  List<SaleModel> get dailySales => _dailySales;
 
-  // ─── Günlük rapor ──────────────────────────────────────────────────────────
-  final List<SaleModel> _allSales = [];
-  List<SaleModel> get dailySales => _todaySales();
+  double get dailyTotal =>
+      _dailySales.where((s) => !s.veresiyeMi).fold(0.0, (s, e) => s + e.toplam);
+  double get dailyCredit =>
+      _dailySales.where((s) => s.veresiyeMi).fold(0.0, (s, e) => s + e.toplam);
+  int get dailySaleCount => _dailySales.length;
 
-  double get dailyTotal => _todaySales()
-      .where((s) => !s.isCredit)
-      .fold(0.0, (s, sale) => s + sale.total);
+  // ══════════════════════════════════════════════════════════════════════════
+  // BAŞLATMA
+  // ══════════════════════════════════════════════════════════════════════════
 
-  double get dailyCredit => _todaySales()
-      .where((s) => s.isCredit)
-      .fold(0.0, (s, sale) => s + sale.total);
-
-  int get dailySaleCount => _todaySales().length;
-
-  String _todayKey() {
-    final n = DateTime.now();
-    return '${n.year}-${n.month.toString().padLeft(2,'0')}-${n.day.toString().padLeft(2,'0')}';
-  }
-
-  List<SaleModel> _todaySales() =>
-      _allSales.where((s) => s.date == _todayKey()).toList();
-
-  // ─── Veresiye kayıtları (in-memory) ───────────────────────────────────────
-  final List<CreditEntry> _creditEntries = [];
-  List<CreditEntry> get creditEntries => List.unmodifiable(_creditEntries);
-
-  // ─── Başlatma ──────────────────────────────────────────────────────────────
-
-  void init() => _loadMockData();
-
-  Future<void> refreshDailyReport() async {
+  Future<void> init() async {
     _loading = true;
     notifyListeners();
-    await Future.delayed(const Duration(milliseconds: 300));
+    await _seedIfEmpty();
+    await Future.wait([_loadProducts(), _loadCariler(), refreshDailyReport()]);
     _loading = false;
     notifyListeners();
   }
 
-  void _loadMockData() {
-    _allProducts = [
-      ProductModel(id: 'p1',  name: 'Coca Cola 1L',        barcode: '8690526085578', category: 'İçecek',       price: 35,  stock: 48),
-      ProductModel(id: 'p2',  name: 'Fanta Portakal 1L',   barcode: '8690526085579', category: 'İçecek',       price: 33,  stock: 32),
-      ProductModel(id: 'p3',  name: 'Su 0.5L',             barcode: '8690526012312', category: 'İçecek',       price: 8,   stock: 120),
-      ProductModel(id: 'p4',  name: 'Ayran 200ml',         barcode: '8690001111111', category: 'İçecek',       price: 12,  stock: 24),
-      ProductModel(id: 'p5',  name: 'Ülker Çikolata 80g',  barcode: '8690504012345', category: 'Atıştırmalık', price: 22,  stock: 3,  totalSold: 150),
-      ProductModel(id: 'p6',  name: 'Lay\'s Klasik 100g',  barcode: '8690526099001', category: 'Atıştırmalık', price: 30,  stock: 18),
-      ProductModel(id: 'p7',  name: 'Ritz Kraker',         barcode: '8690502090909', category: 'Atıştırmalık', price: 28,  stock: 0),
-      ProductModel(id: 'p8',  name: 'Ekmek 400g',          barcode: '1234567890123', category: 'Fırın',        price: 12,  stock: 15),
-      ProductModel(id: 'p9',  name: 'Simit',               barcode: '1234567890124', category: 'Fırın',        price: 6,   stock: 20),
-      ProductModel(id: 'p10', name: 'Süt 1L',              barcode: '8690001234567', category: 'Süt Ürünleri', price: 45,  stock: 20),
-      ProductModel(id: 'p11', name: 'Peynir 200g',         barcode: '8690002345678', category: 'Süt Ürünleri', price: 85,  stock: 5),
-      ProductModel(id: 'p12', name: 'Yoğurt 1kg',          barcode: '8690003456789', category: 'Süt Ürünleri', price: 55,  stock: 12),
-      ProductModel(id: 'p13', name: 'Zeytinyağı 1L',       barcode: '8690551122334', category: 'Bakliyat',     price: 280, stock: 8),
-      ProductModel(id: 'p14', name: 'Makarna 500g',        barcode: '8690551122335', category: 'Bakliyat',     price: 18,  stock: 40),
-      ProductModel(id: 'p15', name: 'Pirinç 1kg',          barcode: '8690551122336', category: 'Bakliyat',     price: 65,  stock: 25),
-      ProductModel(id: 'p16', name: 'Deterjan 1kg',        barcode: '8690701122001', category: 'Temizlik',     price: 95,  stock: 10),
-      ProductModel(id: 'p17', name: 'Şampuan 400ml',       barcode: '8690701122002', category: 'Temizlik',     price: 75,  stock: 7),
-      ProductModel(id: 'p18', name: 'Sigara Marlboro',     barcode: '8690701133001', category: 'Tütün',        price: 105, stock: 30),
+  /// İlk çalışmada DB boşsa demo verisi ekle
+  Future<void> _seedIfEmpty() async {
+    final mevcut = await _db.tumUrunler();
+    if (mevcut.isNotEmpty) return;
+
+    final urunler = [
+      ProductModel(id: 'p1',  ad: 'Coca Cola 1L',        barkod: '8690526085578', kategori: 'İçecek',       satisFiyati: 35,  alisFiyati: 22,  stok: 48),
+      ProductModel(id: 'p2',  ad: 'Fanta Portakal 1L',   barkod: '8690526085579', kategori: 'İçecek',       satisFiyati: 33,  alisFiyati: 21,  stok: 32),
+      ProductModel(id: 'p3',  ad: 'Su 0.5L',             barkod: '8690526012312', kategori: 'İçecek',       satisFiyati: 8,   alisFiyati: 3,   stok: 120),
+      ProductModel(id: 'p4',  ad: 'Ayran 200ml',         barkod: '8690001111111', kategori: 'İçecek',       satisFiyati: 12,  alisFiyati: 6,   stok: 24),
+      ProductModel(id: 'p5',  ad: 'Ülker Çikolata 80g',  barkod: '8690504012345', kategori: 'Atıştırmalık', satisFiyati: 22,  alisFiyati: 12,  stok: 3,  kritikStok: 5),
+      ProductModel(id: 'p6',  ad: 'Lay\'s Klasik 100g',  barkod: '8690526099001', kategori: 'Atıştırmalık', satisFiyati: 30,  alisFiyati: 16,  stok: 18),
+      ProductModel(id: 'p7',  ad: 'Ritz Kraker',         barkod: '8690502090909', kategori: 'Atıştırmalık', satisFiyati: 28,  alisFiyati: 15,  stok: 0),
+      ProductModel(id: 'p8',  ad: 'Ekmek 400g',          barkod: '1234567890123', kategori: 'Fırın',        satisFiyati: 12,  alisFiyati: 7,   stok: 15),
+      ProductModel(id: 'p9',  ad: 'Simit',               barkod: '1234567890124', kategori: 'Fırın',        satisFiyati: 6,   alisFiyati: 3,   stok: 20),
+      ProductModel(id: 'p10', ad: 'Süt 1L',              barkod: '8690001234567', kategori: 'Süt Ürünleri', satisFiyati: 45,  alisFiyati: 30,  stok: 20),
+      ProductModel(id: 'p11', ad: 'Peynir 200g',         barkod: '8690002345678', kategori: 'Süt Ürünleri', satisFiyati: 85,  alisFiyati: 55,  stok: 5, kritikStok: 5),
+      ProductModel(id: 'p12', ad: 'Yoğurt 1kg',          barkod: '8690003456789', kategori: 'Süt Ürünleri', satisFiyati: 55,  alisFiyati: 35,  stok: 12),
+      ProductModel(id: 'p13', ad: 'Zeytinyağı 1L',       barkod: '8690551122334', kategori: 'Bakliyat',     satisFiyati: 280, alisFiyati: 200, stok: 8),
+      ProductModel(id: 'p14', ad: 'Makarna 500g',        barkod: '8690551122335', kategori: 'Bakliyat',     satisFiyati: 18,  alisFiyati: 10,  stok: 40),
+      ProductModel(id: 'p15', ad: 'Pirinç 1kg',          barkod: '8690551122336', kategori: 'Bakliyat',     satisFiyati: 65,  alisFiyati: 42,  stok: 25),
+      ProductModel(id: 'p16', ad: 'Deterjan 1kg',        barkod: '8690701122001', kategori: 'Temizlik',     satisFiyati: 95,  alisFiyati: 60,  stok: 10),
+      ProductModel(id: 'p17', ad: 'Şampuan 400ml',       barkod: '8690701122002', kategori: 'Temizlik',     satisFiyati: 75,  alisFiyati: 48,  stok: 7),
+      ProductModel(id: 'p18', ad: 'Sigara Marlboro',     barkod: '8690701133001', kategori: 'Tütün',        satisFiyati: 105, alisFiyati: 85,  stok: 30),
     ];
 
-    _customers = [
-      CustomerModel(id: 'c1', name: 'Ahmet Yılmaz',   phone: '0555 111 2233', totalDebt: 150.50),
-      CustomerModel(id: 'c2', name: 'Fatma Demir',    phone: '0532 444 5566', totalDebt: 0),
-      CustomerModel(id: 'c3', name: 'Mehmet Kaya',    phone: '0541 888 9900', totalDebt: 340.00),
-      CustomerModel(id: 'c4', name: 'Ayşe Çelik',     phone: '0533 222 3344', totalDebt: 0),
-      CustomerModel(id: 'c5', name: 'Hasan Arslan',   phone: '0544 777 6655', totalDebt: 85.75),
+    for (final u in urunler) {
+      await _db.urunEkle(u);
+    }
+
+    // Demo cariler
+    final cariler = [
+      CariModel(id: 'c1', ad: 'Ahmet Yılmaz',   tip: CariTip.musteri,  telefon: '0555 111 2233', bakiye: 150.50, olusturmaTarihi: DateTime.now()),
+      CariModel(id: 'c2', ad: 'Fatma Demir',    tip: CariTip.musteri,  telefon: '0532 444 5566', olusturmaTarihi: DateTime.now()),
+      CariModel(id: 'c3', ad: 'Mehmet Kaya',    tip: CariTip.musteri,  telefon: '0541 888 9900', bakiye: 340.00, olusturmaTarihi: DateTime.now()),
+      CariModel(id: 'c4', ad: 'Ayşe Çelik',     tip: CariTip.musteri,  telefon: '0533 222 3344', olusturmaTarihi: DateTime.now()),
+      CariModel(id: 'c5', ad: 'Hasan Arslan',   tip: CariTip.musteri,  telefon: '0544 777 6655', bakiye: 85.75,  olusturmaTarihi: DateTime.now()),
+      CariModel(id: 't1', ad: 'Coca Cola Dağıtım', tip: CariTip.tedarikci, telefon: '0212 500 0001', bakiye: -2400.0, olusturmaTarihi: DateTime.now()),
+      CariModel(id: 't2', ad: 'Ülker Gıda',     tip: CariTip.tedarikci, telefon: '0212 500 0002', bakiye: -1800.0, olusturmaTarihi: DateTime.now()),
     ];
+    for (final c in cariler) {
+      await _db.cariEkle(c);
+    }
+  }
 
-    // Örnek bugünkü satışlar (demo ciro)
-    final today = _todayKey();
-    _allSales.addAll([
-      SaleModel(id: _uuid.v4(), items: [], total: 145.50, paymentMethod: PaymentMethod.cash,   date: today, createdAt: DateTime.now().subtract(const Duration(hours: 3))),
-      SaleModel(id: _uuid.v4(), items: [], total: 89.00,  paymentMethod: PaymentMethod.card,   date: today, createdAt: DateTime.now().subtract(const Duration(hours: 2))),
-      SaleModel(id: _uuid.v4(), items: [], total: 230.00, paymentMethod: PaymentMethod.credit, isCredit: true, customerName: 'Ahmet Yılmaz', date: today, createdAt: DateTime.now().subtract(const Duration(hours: 1))),
-    ]);
-
+  Future<void> _loadProducts() async {
+    _allProducts = await _db.tumUrunler();
     _applyProductFilter();
   }
 
-  // ─── Ürün filtresi ─────────────────────────────────────────────────────────
+  Future<void> _loadCariler() async {
+    _cariler = await _db.tumCariler(tip: CariTip.musteri);
+    notifyListeners();
+  }
+
+  Future<void> refreshDailyReport() async {
+    final key = _todayKey();
+    _dailySales = await _db.gunlukSatislar(key);
+    notifyListeners();
+  }
+
+  // ── Ürün filtresi ─────────────────────────────────────────────────────────
 
   void _applyProductFilter() {
     var list = _allProducts;
     if (_selectedCategory != null) {
-      list = list.where((p) => p.category == _selectedCategory).toList();
+      list = list.where((p) => p.kategori == _selectedCategory).toList();
     }
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
       list = list.where((p) =>
-          p.name.toLowerCase().contains(q) ||
-          p.barcode.contains(q) ||
-          p.category.toLowerCase().contains(q)).toList();
+          p.ad.toLowerCase().contains(q) ||
+          p.barkod.contains(q) ||
+          p.kategori.toLowerCase().contains(q)).toList();
     }
     _products = list;
     notifyListeners();
@@ -174,16 +179,16 @@ class TerminalViewModel extends ChangeNotifier {
     _applyProductFilter();
   }
 
-  // ─── Barkod (USB Keyboard Wedge) ──────────────────────────────────────────
+  // ── Barkod (USB Keyboard Wedge) ───────────────────────────────────────────
 
   void handleKeyEvent(KeyEvent event) {
     if (event is! KeyDownEvent) return;
     final key = event.logicalKey;
 
-    if (key == LogicalKeyboardKey.f1)    { _completeSaleAction(PaymentMethod.cash);   return; }
-    if (key == LogicalKeyboardKey.f2)    { _completeSaleAction(PaymentMethod.credit); return; }
-    if (key == LogicalKeyboardKey.f3)    { _completeSaleAction(PaymentMethod.card);   return; }
-    // F4 → manuel barkod dialog — UI katmanında yönetiliyor (terminal_main_screen.dart)
+    if (key == LogicalKeyboardKey.f1)    { _completeSaleAction(OdemeTip.nakit);      return; }
+    if (key == LogicalKeyboardKey.f2)    { _completeSaleAction(OdemeTip.veresiye);   return; }
+    if (key == LogicalKeyboardKey.f3)    { _completeSaleAction(OdemeTip.krediKarti); return; }
+    // F4 → manuel barkod dialog — UI katmanında yönetiliyor
     if (key == LogicalKeyboardKey.f5)    { refreshDailyReport(); return; }
     if (key == LogicalKeyboardKey.f6)    { clearCart(); return; }
     if (key == LogicalKeyboardKey.escape){ clearCart(); return; }
@@ -217,14 +222,15 @@ class TerminalViewModel extends ChangeNotifier {
     _setStatus('🔍 Aranıyor: $barcode');
     notifyListeners();
 
-    final match = _allProducts.where((p) => p.barcode == barcode).firstOrNull;
+    final match = _allProducts.where((p) => p.barkod == barcode).firstOrNull;
     if (match != null) {
       addToCart(match);
       _barcodeState = BarcodeState.found;
-      _setStatus('✓ ${match.name} — ₺${match.price.toStringAsFixed(2)}');
+      _setStatus('✓ ${match.ad} — ₺${match.satisFiyati.toStringAsFixed(2)}');
       Timer(const Duration(seconds: 2), () {
         _barcodeState = BarcodeState.idle;
         _setStatus('🟢 Barkod okuyucu hazır');
+        notifyListeners();
       });
     } else {
       _barcodeState = BarcodeState.notFound;
@@ -232,11 +238,12 @@ class TerminalViewModel extends ChangeNotifier {
       Timer(const Duration(seconds: 2), () {
         _barcodeState = BarcodeState.idle;
         _setStatus('🟢 Barkod okuyucu hazır');
+        notifyListeners();
       });
     }
   }
 
-  // ─── Sepet ─────────────────────────────────────────────────────────────────
+  // ── Sepet ─────────────────────────────────────────────────────────────────
 
   void addToCart(ProductModel product, {int quantity = 1}) {
     final idx = _cart.indexWhere((i) => i.product.id == product.id);
@@ -298,130 +305,99 @@ class TerminalViewModel extends ChangeNotifier {
 
   void clearCart() {
     _cart.clear();
-    _selectedIndex    = null;
-    _selectedCustomer = null;
+    _selectedIndex = null;
+    _selectedCari  = null;
     _setStatus('🗑 Sepet temizlendi');
   }
 
-  // ─── Satış Tamamlama ───────────────────────────────────────────────────────
+  // ── Satış Tamamlama ───────────────────────────────────────────────────────
 
-  void _completeSaleAction(PaymentMethod method) {
+  void _completeSaleAction(OdemeTip odemeTip) {
     if (_cart.isEmpty) return;
-    completeSale(paymentMethodEnum: method);
+    if (odemeTip == OdemeTip.veresiye && _selectedCari == null) {
+      _setStatus('⚠ Veresiye için müşteri seçin', error: true);
+      return;
+    }
+    completeSale(odemeTip: odemeTip);
   }
 
   /// Başarıda saleId döner, hata durumunda null döner.
   Future<String?> completeSale({
-    PaymentMethod? paymentMethodEnum,
-    CustomerModel? customer,
-    bool isCredit = false,
+    OdemeTip?   odemeTip,
+    CariModel?  cari,
   }) async {
-    final method = paymentMethodEnum ?? PaymentMethod.cash;
-    final isVer  = method == PaymentMethod.credit || isCredit;
+    final tip  = odemeTip ?? OdemeTip.nakit;
+    final cust = cari ?? _selectedCari;
 
     if (_cart.isEmpty) {
       _setStatus('⚠ Sepet boş!', error: true);
       return null;
     }
-    if (isVer && customer == null && _selectedCustomer == null) {
+    if (tip == OdemeTip.veresiye && cust == null) {
       _setStatus('⚠ Veresiye için müşteri seçin', error: true);
       return null;
     }
 
-    final cust = customer ?? _selectedCustomer;
-    if (customer != null) _selectedCustomer = customer;
+    if (cari != null) _selectedCari = cari;
 
     _loading = true;
     notifyListeners();
 
-    // Simüle async (gerçekte Firestore batch olur)
-    await Future.delayed(const Duration(milliseconds: 250));
+    // CartItem → SatisKalemi dönüşümü
+    final kalemler = _cart.map((item) => SatisKalemi(
+      urunId:      item.product.id,
+      urunAdi:     item.product.ad,
+      barkod:      item.product.barkod,
+      satisFiyati: item.product.satisFiyati,
+      alisFiyati:  item.product.alisFiyati,
+      indirim:     item.discount,
+      miktar:      item.quantity,
+    )).toList();
 
-    final saleId   = _uuid.v4();
-    final total    = cartTotal;
-    final itemsList = _cart.map((i) => i.toMap()).toList();
+    String? saleId;
+    try {
+      saleId = await _db.satisKaydet(
+        kalemler: kalemler,
+        odemeTip: tip,
+        cari:     tip == OdemeTip.veresiye ? cust : null,
+        kasaId:   tip == OdemeTip.krediKarti ? 'pos' : 'nakit',
+      );
 
-    // Stokları düş
-    for (final item in _cart) {
-      final idx = _allProducts.indexWhere((p) => p.id == item.product.id);
-      if (idx >= 0) {
-        _allProducts[idx] = _allProducts[idx].copyWith(
-          stock:     _allProducts[idx].stock     - item.quantity,
-          totalSold: _allProducts[idx].totalSold + item.quantity,
-        );
-      }
+      final msg = tip == OdemeTip.veresiye
+          ? '✓ Veresiye: ₺${cartTotal.toStringAsFixed(2)} — ${cust?.ad}'
+          : '✓ Satış tamamlandı: ₺${cartTotal.toStringAsFixed(2)}';
+
+      clearCart();
+      // Stok ve satışları yenile
+      await Future.wait([_loadProducts(), refreshDailyReport()]);
+      _setStatus(msg);
+    } catch (e) {
+      _setStatus('❌ Hata: $e', error: true);
     }
 
-    // Satışı kaydet
-    _allSales.add(SaleModel(
-      id:            saleId,
-      items:         itemsList,
-      total:         total,
-      paymentMethod: method,
-      isCredit:      isVer,
-      customerId:    cust?.id,
-      customerName:  cust?.name,
-    ));
-
-    // Veresiye: müşteri borcunu güncelle
-    if (isVer && cust != null) {
-      final idx = _customers.indexWhere((c) => c.id == cust.id);
-      if (idx >= 0) {
-        _customers[idx] = _customers[idx].copyWith(
-          totalDebt: _customers[idx].totalDebt + total,
-        );
-      }
-      _creditEntries.add(CreditEntry(
-        id:           _uuid.v4(),
-        customerId:   cust.id,
-        customerName: cust.name,
-        amount:       total,
-        saleId:       saleId,
-      ));
-    }
-
-    final msg = isVer
-        ? '✓ Veresiye: ₺${total.toStringAsFixed(2)} — ${cust?.name}'
-        : '✓ Satış tamamlandı: ₺${total.toStringAsFixed(2)}';
-
-    clearCart();
-    _applyProductFilter(); // stok güncellemesini yansıt
     _loading = false;
-    _setStatus(msg);
-
+    notifyListeners();
     return saleId;
   }
 
-  // ─── Müşteri ───────────────────────────────────────────────────────────────
+  // ── Cari ─────────────────────────────────────────────────────────────────
 
-  void selectCustomer(CustomerModel c) {
-    _selectedCustomer = c;
+  void selectCari(CariModel c) {
+    _selectedCari = c;
     notifyListeners();
   }
 
-  Future<void> markCreditPaid(String entryId) async {
-    final idx = _creditEntries.indexWhere((e) => e.id == entryId);
-    if (idx < 0) return;
-    final entry = _creditEntries[idx];
-    _creditEntries[idx] = CreditEntry(
-      id:           entry.id,
-      customerId:   entry.customerId,
-      customerName: entry.customerName,
-      amount:       entry.amount,
-      isPaid:       true,
-      saleId:       entry.saleId,
-      createdAt:    entry.createdAt,
-    );
-    final custIdx = _customers.indexWhere((c) => c.id == entry.customerId);
-    if (custIdx >= 0) {
-      _customers[custIdx] = _customers[custIdx].copyWith(
-        totalDebt: (_customers[custIdx].totalDebt - entry.amount).clamp(0, double.infinity),
-      );
-    }
-    notifyListeners();
+  // Eski UI uyumluluğu için alias
+  void selectCustomer(dynamic c) {
+    if (c is CariModel) selectCari(c);
   }
 
-  // ─── Yardımcılar ───────────────────────────────────────────────────────────
+  // ── Yardımcılar ───────────────────────────────────────────────────────────
+
+  String _todayKey() {
+    final n = DateTime.now();
+    return '${n.year}-${n.month.toString().padLeft(2,'0')}-${n.day.toString().padLeft(2,'0')}';
+  }
 
   void _setStatus(String msg, {bool error = false}) {
     _statusMessage = msg;

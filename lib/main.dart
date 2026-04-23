@@ -3,8 +3,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import 'core/constants/app_colors.dart';
-import 'features/terminal/presentation/terminal_main_screen.dart';
+import 'features/cari/viewmodel/cari_viewmodel.dart';
+import 'features/dashboard/viewmodel/dashboard_viewmodel.dart';
+import 'features/gider/viewmodel/gider_viewmodel.dart';
 import 'features/terminal/viewmodel/terminal_viewmodel.dart';
+import 'presentation/app_shell.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,13 +19,18 @@ class LiqraTerminalApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => TerminalViewModel(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => TerminalViewModel()),
+        ChangeNotifierProvider(create: (_) => CariViewModel()),
+        ChangeNotifierProvider(create: (_) => GiderViewModel()),
+        ChangeNotifierProvider(create: (_) => DashboardViewModel()),
+      ],
       child: MaterialApp(
         title: 'Liqra Terminal Pro',
         debugShowCheckedModeBanner: false,
         theme: _buildTheme(),
-        home: const TerminalMainScreen(),
+        home: const AppShell(),
       ),
     );
   }
@@ -55,6 +63,24 @@ class LiqraTerminalApp extends StatelessWidget {
           borderSide: const BorderSide(color: AppColors.teal),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: AppColors.bgCard,
+        selectedColor:   AppColors.teal.withAlpha(40),
+        side: const BorderSide(color: AppColors.border),
+        labelStyle: GoogleFonts.outfit(color: AppColors.textSecondary, fontSize: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      ),
+      dividerTheme: const DividerThemeData(
+        color:     AppColors.border,
+        thickness: 0.5,
+      ),
+      tabBarTheme: TabBarThemeData(
+        indicatorColor:         AppColors.teal,
+        labelColor:             AppColors.teal,
+        unselectedLabelColor:   AppColors.textSecondary,
+        labelStyle:             GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13),
+        unselectedLabelStyle:   GoogleFonts.outfit(fontSize: 13),
       ),
     );
   }

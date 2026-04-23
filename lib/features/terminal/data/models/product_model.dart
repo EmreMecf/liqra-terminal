@@ -1,69 +1,91 @@
 class ProductModel {
-  final String id;
-  final String name;
-  final String barcode;
-  final String category;
-  final double price;
-  final int stock;
-  final String? unit;
-  final String? imageUrl;
-  final int totalSold;
-  final bool isActive;
+  final String  id;
+  final String  ad;
+  final String  barkod;
+  final String  kategori;
+  final double  satisFiyati;
+  final double  alisFiyati;    // kar-zarar hesabı için
+  final int     stok;
+  final int     kritikStok;   // bu seviyenin altı uyarı verir
+  final String? birim;        // adet, kg, lt, paket...
+  final String? tedarikciId;  // CariModel.id (tip: tedarikci)
+  final int     toplamSatilan;
+  final bool    aktif;
 
   const ProductModel({
     required this.id,
-    required this.name,
-    required this.barcode,
-    required this.category,
-    required this.price,
-    required this.stock,
-    this.unit,
-    this.imageUrl,
-    this.totalSold = 0,
-    this.isActive = true,
+    required this.ad,
+    required this.barkod,
+    required this.kategori,
+    required this.satisFiyati,
+    this.alisFiyati   = 0,
+    required this.stok,
+    this.kritikStok   = 5,
+    this.birim,
+    this.tedarikciId,
+    this.toplamSatilan = 0,
+    this.aktif         = true,
   });
 
-  factory ProductModel.fromMap(String id, Map<String, dynamic> d) {
-    return ProductModel(
-      id:        id,
-      name:      d['name']      as String? ?? '',
-      barcode:   d['barcode']   as String? ?? '',
-      category:  d['category']  as String? ?? 'Genel',
-      price:     (d['price']    as num?)?.toDouble() ?? 0,
-      stock:     (d['stock']    as num?)?.toInt()    ?? 0,
-      unit:      d['unit']      as String?,
-      imageUrl:  d['imageUrl']  as String?,
-      totalSold: (d['totalSold'] as num?)?.toInt() ?? 0,
-      isActive:  d['isActive']  as bool? ?? true,
-    );
-  }
+  // ── DB serileştirme ────────────────────────────────────────────────────────
+
+  factory ProductModel.fromMap(Map<String, dynamic> m) => ProductModel(
+    id:            m['id']              as String,
+    ad:            m['ad']              as String,
+    barkod:        m['barkod']          as String,
+    kategori:      m['kategori']        as String,
+    satisFiyati:   (m['satis_fiyati']   as num).toDouble(),
+    alisFiyati:    (m['alis_fiyati']    as num).toDouble(),
+    stok:          m['stok']            as int,
+    kritikStok:    m['kritik_stok']     as int,
+    birim:         m['birim']           as String?,
+    tedarikciId:   m['tedarikci_id']    as String?,
+    toplamSatilan: m['toplam_satilan']  as int,
+    aktif:         (m['aktif']          as int) == 1,
+  );
 
   Map<String, dynamic> toMap() => {
-    'id':        id,
-    'name':      name,
-    'barcode':   barcode,
-    'category':  category,
-    'price':     price,
-    'stock':     stock,
-    'isActive':  isActive,
-    if (unit     != null) 'unit':     unit,
-    if (imageUrl != null) 'imageUrl': imageUrl,
-    'totalSold':  totalSold,
+    'id':             id,
+    'ad':             ad,
+    'barkod':         barkod,
+    'kategori':       kategori,
+    'satis_fiyati':   satisFiyati,
+    'alis_fiyati':    alisFiyati,
+    'stok':           stok,
+    'kritik_stok':    kritikStok,
+    'birim':          birim,
+    'tedarikci_id':   tedarikciId,
+    'toplam_satilan': toplamSatilan,
+    'aktif':          aktif ? 1 : 0,
   };
 
-  bool get isLowStock   => stock > 0 && stock <= 5;
-  bool get isOutOfStock => stock <= 0;
+  // ── Hesaplamalar ───────────────────────────────────────────────────────────
 
-  ProductModel copyWith({int? stock, int? totalSold}) => ProductModel(
-    id:        id,
-    name:      name,
-    barcode:   barcode,
-    category:  category,
-    price:     price,
-    stock:     stock     ?? this.stock,
-    unit:      unit,
-    imageUrl:  imageUrl,
-    totalSold: totalSold ?? this.totalSold,
-    isActive:  isActive,
-  );
+  double get karMarji => satisFiyati - alisFiyati;
+  double get karOrani => alisFiyati > 0
+      ? ((satisFiyati - alisFiyati) / alisFiyati) * 100
+      : 0;
+  bool   get stokKritik    => stok > 0 && stok <= kritikStok;
+  bool   get stokTukendi   => stok <= 0;
+
+  ProductModel copyWith({int? stok, int? toplamSatilan, double? satisFiyati, double? alisFiyati}) =>
+    ProductModel(
+      id: id, ad: ad, barkod: barkod, kategori: kategori,
+      satisFiyati:   satisFiyati   ?? this.satisFiyati,
+      alisFiyati:    alisFiyati    ?? this.alisFiyati,
+      stok:          stok          ?? this.stok,
+      kritikStok:    kritikStok,
+      birim:         birim,
+      tedarikciId:   tedarikciId,
+      toplamSatilan: toplamSatilan ?? this.toplamSatilan,
+      aktif:         aktif,
+    );
+
+  // Eski alan adlarıyla uyumluluk
+  double get price      => satisFiyati;
+  String get name       => ad;
+  String get barcode    => barkod;
+  String get category   => kategori;
+  bool   get isLowStock  => stokKritik;
+  bool   get isOutOfStock=> stokTukendi;
 }

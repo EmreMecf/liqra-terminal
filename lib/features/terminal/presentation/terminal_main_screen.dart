@@ -9,8 +9,6 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_shortcuts.dart';
 import '../../../core/services/printer_service.dart';
 import '../data/models/cart_item.dart';
-import '../data/models/customer_model.dart';
-import '../data/models/sale_model.dart' show PaymentMethod;
 import '../viewmodel/terminal_viewmodel.dart';
 
 final _fmtMoney = NumberFormat.currency(locale: 'tr_TR', symbol: '₺', decimalDigits: 2);
@@ -22,7 +20,7 @@ Future<void> showBarcodeDialog(BuildContext context) async {
 
   await showDialog(
     context: context,
-    builder: (_) => AlertDialog(
+    builder: (ctx) => AlertDialog(
       backgroundColor: AppColors.bgCard,
       title: Text('Manuel Barkod Gir',
         style: GoogleFonts.outfit(color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
@@ -41,19 +39,19 @@ Future<void> showBarcodeDialog(BuildContext context) async {
           ),
           onSubmitted: (v) {
             if (v.trim().isNotEmpty) vm.lookupBarcode(v.trim());
-            Navigator.pop(_);
+            Navigator.pop(ctx);
           },
         ),
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(_),
+          onPressed: () => Navigator.pop(ctx),
           child: const Text('İptal', style: TextStyle(color: AppColors.textSecondary)),
         ),
         TextButton(
           onPressed: () {
             if (ctrl.text.trim().isNotEmpty) vm.lookupBarcode(ctrl.text.trim());
-            Navigator.pop(_);
+            Navigator.pop(ctx);
           },
           child: const Text('Ara', style: TextStyle(color: AppColors.teal)),
         ),
@@ -99,7 +97,6 @@ class _TerminalMainScreenState extends State<TerminalMainScreen> {
       autofocus: true,
       onKeyEvent: (e) {
         final vm = context.read<TerminalViewModel>();
-        // F4 → manuel barkod dialog
         if (e is KeyDownEvent && e.logicalKey == LogicalKeyboardKey.f4) {
           showBarcodeDialog(context);
           return;
@@ -145,7 +142,6 @@ class _TopBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Logo
           Container(
             width: 28, height: 28,
             decoration: BoxDecoration(
@@ -155,13 +151,12 @@ class _TopBar extends StatelessWidget {
             child: const Icon(Icons.point_of_sale_rounded, size: 16, color: Colors.black),
           ),
           const SizedBox(width: 10),
-          Text('Liqra Terminal Pro',
+          Text('Satış Terminali',
             style: GoogleFonts.outfit(
               color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w700)),
 
           const SizedBox(width: 24),
 
-          // Günlük istatistikler
           Consumer<TerminalViewModel>(
             builder: (_, vm, __) => Row(
               children: [
@@ -197,23 +192,18 @@ class _TopBar extends StatelessWidget {
 
           const Spacer(),
 
-          // Manuel barkod (F4)
           _ToolbarButton(
             icon: Icons.qr_code_scanner_rounded,
             label: 'Barkod Gir (F4)',
             onTap: () => showBarcodeDialog(context),
           ),
           const SizedBox(width: 8),
-
-          // Kısayollar
           _ToolbarButton(
             icon: Icons.keyboard_outlined,
             label: 'Kısayollar',
             onTap: () => _showShortcuts(context),
           ),
           const SizedBox(width: 8),
-
-          // Rapor yenile (F5)
           Consumer<TerminalViewModel>(
             builder: (_, vm, __) => _ToolbarButton(
               icon: vm.loading ? Icons.hourglass_top_rounded : Icons.refresh_rounded,
@@ -297,10 +287,9 @@ class _TopStat extends StatelessWidget {
 class _ToolbarButton extends StatelessWidget {
   final IconData icon;
   final String label;
-  final bool active;
   final VoidCallback onTap;
   const _ToolbarButton({
-    required this.icon, required this.label, required this.onTap, this.active = false});
+    required this.icon, required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -312,14 +301,11 @@ class _ToolbarButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: active ? AppColors.teal.withAlpha(22) : Colors.transparent,
+            color: Colors.transparent,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: active ? AppColors.teal.withAlpha(60) : AppColors.border),
+            border: Border.all(color: AppColors.border),
           ),
-          child: Icon(icon,
-            size: 18,
-            color: active ? AppColors.teal : AppColors.textSecondary),
+          child: Icon(icon, size: 18, color: AppColors.textSecondary),
         ),
       ),
     );
@@ -345,8 +331,6 @@ class _ProductsPanel extends StatelessWidget {
     );
   }
 }
-
-// ── Search Bar ────────────────────────────────────────────────────────────────
 
 class _SearchBar extends StatefulWidget {
   const _SearchBar();
@@ -388,14 +372,12 @@ class _SearchBarState extends State<_SearchBar> {
         ),
         onChanged: (v) {
           context.read<TerminalViewModel>().setSearch(v);
-          setState(() {}); // suffix icon için
+          setState(() {});
         },
       ),
     );
   }
 }
-
-// ── Category Bar ──────────────────────────────────────────────────────────────
 
 class _CategoryBar extends StatelessWidget {
   const _CategoryBar();
@@ -443,8 +425,6 @@ class _CategoryBar extends StatelessWidget {
     );
   }
 }
-
-// ── Product Grid ──────────────────────────────────────────────────────────────
 
 class _ProductGrid extends StatelessWidget {
   const _ProductGrid();
@@ -513,9 +493,7 @@ class _ProductCardState extends State<_ProductCard> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           decoration: BoxDecoration(
-            color: outOfStock
-                ? AppColors.bgCard.withAlpha(128)
-                : AppColors.bgCard,
+            color: outOfStock ? AppColors.bgCard.withAlpha(128) : AppColors.bgCard,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: _hover && !outOfStock
@@ -539,29 +517,22 @@ class _ProductCardState extends State<_ProductCard> {
                         color: AppColors.bgTertiary,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
-                        Icons.inventory_2_outlined,
-                        color: AppColors.textSecondary,
-                        size: 28,
-                      ),
+                      child: const Icon(Icons.inventory_2_outlined,
+                        color: AppColors.textSecondary, size: 28),
                     ),
                     const SizedBox(height: 8),
                     Text(p.name as String,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.outfit(
-                        color: outOfStock
-                            ? AppColors.textSecondary
-                            : AppColors.textPrimary,
+                        color: outOfStock ? AppColors.textSecondary : AppColors.textPrimary,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       )),
                     const Spacer(),
                     Text(_fmtMoney.format(p.price as num),
                       style: GoogleFonts.dmMono(
-                        color: outOfStock
-                            ? AppColors.textSecondary
-                            : AppColors.teal,
+                        color: outOfStock ? AppColors.textSecondary : AppColors.teal,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                       )),
@@ -571,16 +542,13 @@ class _ProductCardState extends State<_ProductCard> {
                       style: GoogleFonts.outfit(
                         color: outOfStock
                             ? AppColors.accentRed
-                            : lowStock
-                                ? AppColors.gold
-                                : AppColors.textSecondary,
+                            : lowStock ? AppColors.gold : AppColors.textSecondary,
                         fontSize: 10,
                       ),
                     ),
                   ],
                 ),
               ),
-
               if (lowStock && !outOfStock)
                 Positioned(
                   top: 8, right: 8,
@@ -595,7 +563,6 @@ class _ProductCardState extends State<_ProductCard> {
                         color: AppColors.gold, fontSize: 9, fontWeight: FontWeight.w700)),
                   ),
                 ),
-
               if (outOfStock)
                 Positioned.fill(
                   child: Container(
@@ -647,8 +614,6 @@ class _CartPanel extends StatelessWidget {
     );
   }
 }
-
-// ── Cart Header ───────────────────────────────────────────────────────────────
 
 class _CartHeader extends StatelessWidget {
   const _CartHeader();
@@ -710,21 +675,17 @@ class _CartHeader extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('İptal',
-              style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text('İptal', style: TextStyle(color: AppColors.textSecondary)),
           ),
           TextButton(
             onPressed: () { vm.clearCart(); Navigator.pop(context); },
-            child: const Text('Temizle',
-              style: TextStyle(color: AppColors.accentRed)),
+            child: const Text('Temizle', style: TextStyle(color: AppColors.accentRed)),
           ),
         ],
       ),
     );
   }
 }
-
-// ── Cart Item List ────────────────────────────────────────────────────────────
 
 class _CartItemList extends StatelessWidget {
   const _CartItemList();
@@ -742,12 +703,10 @@ class _CartItemList extends StatelessWidget {
               size: 48, color: AppColors.textSecondary),
             const SizedBox(height: 12),
             Text('Sepet boş',
-              style: GoogleFonts.outfit(
-                color: AppColors.textSecondary, fontSize: 13)),
+              style: GoogleFonts.outfit(color: AppColors.textSecondary, fontSize: 13)),
             const SizedBox(height: 6),
             Text('Ürüne tıklayın veya barkod okutun',
-              style: GoogleFonts.outfit(
-                color: AppColors.textMuted, fontSize: 11)),
+              style: GoogleFonts.outfit(color: AppColors.textMuted, fontSize: 11)),
           ],
         ),
       );
@@ -809,8 +768,6 @@ class _CartRowState extends State<_CartRow> {
                 ],
               ),
             ),
-
-            // Adet kontrolü
             Row(
               children: [
                 _QtyButton(
@@ -835,9 +792,7 @@ class _CartRowState extends State<_CartRow> {
                 ),
               ],
             ),
-
             const SizedBox(width: 8),
-
             SizedBox(
               width: 72,
               child: Text(_fmtMoney.format(item.lineTotal),
@@ -848,9 +803,7 @@ class _CartRowState extends State<_CartRow> {
                   fontWeight: FontWeight.w700,
                 )),
             ),
-
             const SizedBox(width: 4),
-
             if (_hover)
               IconButton(
                 icon: const Icon(Icons.close_rounded,
@@ -916,7 +869,6 @@ class _CartFooter extends StatelessWidget {
           const SizedBox(height: 12),
           const Divider(color: AppColors.border, height: 1),
           const SizedBox(height: 12),
-
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -935,7 +887,6 @@ class _CartFooter extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-
           Row(
             children: [
               Expanded(
@@ -956,13 +907,12 @@ class _CartFooter extends StatelessWidget {
                   icon: Icons.credit_card_rounded,
                   color: AppColors.textSecondary,
                   enabled: vm.cart.isNotEmpty,
-                  onTap: () => _completeSale(context, vm, PaymentMethod.card),
+                  onTap: () => _completeSale(context, vm, OdemeTip.krediKarti),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-
           _ActionButton(
             label: 'Nakit Tahsil Et',
             sublabel: 'F1',
@@ -970,7 +920,7 @@ class _CartFooter extends StatelessWidget {
             color: AppColors.teal,
             primary: true,
             enabled: vm.cart.isNotEmpty,
-            onTap: () => _completeSale(context, vm, PaymentMethod.cash),
+            onTap: () => _completeSale(context, vm, OdemeTip.nakit),
           ),
         ],
       ),
@@ -980,20 +930,21 @@ class _CartFooter extends StatelessWidget {
   Future<void> _completeSale(
     BuildContext context,
     TerminalViewModel vm,
-    PaymentMethod method,
+    OdemeTip odemeTip,
   ) async {
     if (vm.cart.isEmpty) return;
     final cartSnapshot = List<CartItem>.from(vm.cart);
     final total        = vm.cartTotal;
-    final saleId       = await vm.completeSale(paymentMethodEnum: method);
+    final saleId       = await vm.completeSale(odemeTip: odemeTip);
     if (saleId != null && context.mounted) {
+      final sm = ScaffoldMessenger.of(context);
       await PrinterService.instance.printReceipt(
         saleId: saleId,
         items:  cartSnapshot,
         total:  total,
-        paymentMethod: method,
+        odemeTip: odemeTip,
       );
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      sm.showSnackBar(SnackBar(
         content: Text('Satış tamamlandı ✓', style: GoogleFonts.outfit()),
         backgroundColor: AppColors.accentGreen,
         duration: const Duration(seconds: 2),
@@ -1009,27 +960,28 @@ class _CartFooter extends StatelessWidget {
     if (vm.cart.isEmpty) return;
     final cartSnapshot = List<CartItem>.from(vm.cart);
 
-    final customer = await showDialog<CustomerModel>(
+    final cari = await showDialog<CariModel>(
       context: context,
-      builder: (_) => _CustomerPickerDialog(customers: vm.customers),
+      builder: (_) => _CariPickerDialog(cariler: vm.cariler),
     );
-    if (customer == null || !context.mounted) return;
+    if (cari == null || !context.mounted) return;
 
     final saleId = await vm.completeSale(
-      paymentMethodEnum: PaymentMethod.credit,
-      customer: customer,
+      odemeTip: OdemeTip.veresiye,
+      cari:     cari,
     );
     if (saleId != null && context.mounted) {
+      final sm = ScaffoldMessenger.of(context);
+      final cariAd = cari.ad;
       await PrinterService.instance.printReceipt(
         saleId: saleId,
         items:  cartSnapshot,
         total:  total,
-        paymentMethod: PaymentMethod.credit,
-        customerName: customer.name,
+        odemeTip: OdemeTip.veresiye,
+        customerName: cariAd,
       );
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Veresiye kaydedildi — ${customer.name}',
-          style: GoogleFonts.outfit()),
+      sm.showSnackBar(SnackBar(
+        content: Text('Veresiye kaydedildi — $cariAd', style: GoogleFonts.outfit()),
         backgroundColor: AppColors.gold,
         duration: const Duration(seconds: 3),
       ));
@@ -1103,8 +1055,7 @@ class _ActionButton extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 18,
-                color: primary ? Colors.black87 : color),
+              Icon(icon, size: 18, color: primary ? Colors.black87 : color),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(label,
@@ -1135,24 +1086,24 @@ class _ActionButton extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// CUSTOMER PICKER DIALOG
+// CARİ (MÜŞTERİ) SEÇME DİALOGU
 // ══════════════════════════════════════════════════════════════════════════════
 
-class _CustomerPickerDialog extends StatefulWidget {
-  final List<CustomerModel> customers;
-  const _CustomerPickerDialog({required this.customers});
+class _CariPickerDialog extends StatefulWidget {
+  final List<CariModel> cariler;
+  const _CariPickerDialog({required this.cariler});
 
   @override
-  State<_CustomerPickerDialog> createState() => _CustomerPickerDialogState();
+  State<_CariPickerDialog> createState() => _CariPickerDialogState();
 }
 
-class _CustomerPickerDialogState extends State<_CustomerPickerDialog> {
+class _CariPickerDialogState extends State<_CariPickerDialog> {
   String _search = '';
 
-  List<CustomerModel> get _filtered => widget.customers
+  List<CariModel> get _filtered => widget.cariler
       .where((c) =>
-          c.name.toLowerCase().contains(_search.toLowerCase()) ||
-          (c.phone ?? '').contains(_search))
+          c.ad.toLowerCase().contains(_search.toLowerCase()) ||
+          (c.telefon ?? '').contains(_search))
       .toList();
 
   @override
@@ -1181,26 +1132,24 @@ class _CustomerPickerDialogState extends State<_CustomerPickerDialog> {
               child: _filtered.isEmpty
                   ? Center(
                       child: Text('Müşteri bulunamadı',
-                        style: GoogleFonts.outfit(
-                          color: AppColors.textSecondary)))
+                        style: GoogleFonts.outfit(color: AppColors.textSecondary)))
                   : ListView.builder(
                       itemCount: _filtered.length,
                       itemBuilder: (_, i) {
                         final c = _filtered[i];
                         return ListTile(
                           onTap: () => Navigator.pop(context, c),
-                          title: Text(c.name,
+                          title: Text(c.ad,
                             style: GoogleFonts.outfit(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w600)),
-                          subtitle: c.phone != null
-                              ? Text(c.phone!,
+                          subtitle: c.telefon != null
+                              ? Text(c.telefon!,
                                   style: GoogleFonts.outfit(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 12))
+                                    color: AppColors.textSecondary, fontSize: 12))
                               : null,
-                          trailing: c.hasDebt
-                              ? Text(_fmtMoney.format(c.totalDebt),
+                          trailing: c.alacaklimi
+                              ? Text(_fmtMoney.format(c.bakiye),
                                   style: GoogleFonts.dmMono(
                                     color: AppColors.accentRed, fontSize: 12))
                               : const Icon(Icons.check_circle_rounded,
@@ -1215,8 +1164,7 @@ class _CustomerPickerDialogState extends State<_CustomerPickerDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('İptal',
-            style: TextStyle(color: AppColors.textSecondary)),
+          child: const Text('İptal', style: TextStyle(color: AppColors.textSecondary)),
         ),
       ],
     );
