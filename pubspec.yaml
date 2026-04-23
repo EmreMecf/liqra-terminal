@@ -1,0 +1,35 @@
+name: liqra_terminal
+description: "Liqra Terminal Pro — POS sistemi (barkod, kasa, veresiye)"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  provider: ^6.1.2
+
+  # UI
+  google_fonts: ^6.2.1
+  flutter_animate: ^4.5.2
+
+  # Thermal printer / PDF
+  pdf: ^3.11.1
+  printing: ^5.14.2
+
+  # Utils
+  intl: ^0.20.2
+  uuid: ^4.5.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
