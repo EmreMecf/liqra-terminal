@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'core/constants/app_colors.dart';
 import 'features/cari/viewmodel/cari_viewmodel.dart';
@@ -9,8 +11,16 @@ import 'features/gider/viewmodel/gider_viewmodel.dart';
 import 'features/terminal/viewmodel/terminal_viewmodel.dart';
 import 'presentation/app_shell.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Windows / Linux / macOS masaüstü: sqflite_common_ffi gerekli
+  sqfliteFfiInit();
+  databaseFactory = databaseFactoryFfi;
+
+  // tr_TR locale için DateFormat başlatma
+  await initializeDateFormatting('tr_TR');
+
   runApp(const LiqraTerminalApp());
 }
 
@@ -76,11 +86,11 @@ class LiqraTerminalApp extends StatelessWidget {
         thickness: 0.5,
       ),
       tabBarTheme: TabBarThemeData(
-        indicatorColor:         AppColors.teal,
-        labelColor:             AppColors.teal,
-        unselectedLabelColor:   AppColors.textSecondary,
-        labelStyle:             GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13),
-        unselectedLabelStyle:   GoogleFonts.outfit(fontSize: 13),
+        indicatorColor:       AppColors.teal,
+        labelColor:           AppColors.teal,
+        unselectedLabelColor: AppColors.textSecondary,
+        labelStyle:           GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13),
+        unselectedLabelStyle: GoogleFonts.outfit(fontSize: 13),
       ),
     );
   }
