@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/theme/app_color_scheme.dart';
 import '../../terminal/data/models/cari_hareket_model.dart';
 import '../../terminal/data/models/cari_model.dart';
 import '../viewmodel/cari_viewmodel.dart';
@@ -78,11 +79,12 @@ class _CariHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-      decoration: const BoxDecoration(
-        color: AppColors.bgSecondary,
-        border: Border(bottom: BorderSide(color: AppColors.border, width: 0.5)),
+      decoration: BoxDecoration(
+        color: c.bgSecondary,
+        border: Border(bottom: BorderSide(color: c.border, width: 0.5)),
       ),
       child: Row(
         children: [
@@ -91,7 +93,7 @@ class _CariHeader extends StatelessWidget {
             children: [
               Text('Cari Yönetimi',
                 style: GoogleFonts.outfit(
-                  color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
+                  color: c.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
               const SizedBox(height: 2),
               Row(children: [
                 _HeaderStat('Toplam Alacak', vm.toplamAlacak, AppColors.accentGreen),
@@ -106,11 +108,11 @@ class _CariHeader extends StatelessWidget {
             width: 260,
             height: 38,
             child: TextField(
-              style: GoogleFonts.outfit(color: AppColors.textPrimary, fontSize: 13),
+              style: GoogleFonts.outfit(color: c.textPrimary, fontSize: 13),
               decoration: InputDecoration(
                 hintText: 'İsim, telefon veya VKN ara...',
-                hintStyle: GoogleFonts.outfit(color: AppColors.textSecondary, fontSize: 12),
-                prefixIcon: const Icon(Icons.search_rounded, size: 18, color: AppColors.textSecondary),
+                hintStyle: GoogleFonts.outfit(color: c.textSecondary, fontSize: 12),
+                prefixIcon: Icon(Icons.search_rounded, size: 18, color: c.textSecondary),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
               onChanged: vm.setSearch,
@@ -142,10 +144,11 @@ class _HeaderStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: GoogleFonts.outfit(color: AppColors.textSecondary, fontSize: 10)),
+        Text(label, style: GoogleFonts.outfit(color: c.textSecondary, fontSize: 10)),
         Text(_fmtMoney.format(value),
           style: GoogleFonts.dmMono(color: color, fontSize: 13, fontWeight: FontWeight.w700)),
       ],
@@ -161,13 +164,14 @@ class _CariTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
-      color: AppColors.bgSecondary,
+      color: c.bgSecondary,
       child: TabBar(
         controller: tabCtrl,
         indicatorColor: AppColors.teal,
         labelColor: AppColors.teal,
-        unselectedLabelColor: AppColors.textSecondary,
+        unselectedLabelColor: c.textSecondary,
         labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13),
         tabs: const [
           Tab(text: 'Müşteriler'),
@@ -187,8 +191,9 @@ class _CariList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     // tip filtresi uygula
-    final list = vm.cariler.where((c) => c.tip == tip || c.tip == CariTip.ikisi).toList();
+    final list = vm.cariler.where((item) => item.tip == tip || item.tip == CariTip.ikisi).toList();
 
     if (vm.state == CariViewState.loading) {
       return const Center(child: CircularProgressIndicator(color: AppColors.teal));
@@ -199,10 +204,10 @@ class _CariList extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.people_outline_rounded, size: 48, color: AppColors.textSecondary),
+            Icon(Icons.people_outline_rounded, size: 48, color: c.textSecondary),
             const SizedBox(height: 12),
             Text('Kayıt bulunamadı',
-              style: GoogleFonts.outfit(color: AppColors.textSecondary, fontSize: 14)),
+              style: GoogleFonts.outfit(color: c.textSecondary, fontSize: 14)),
             const SizedBox(height: 8),
             TextButton.icon(
               onPressed: () => _showCariDialog(context, vm, defaultTip: tip),
@@ -237,9 +242,10 @@ class _CariCardState extends State<_CariCard> {
 
   @override
   Widget build(BuildContext context) {
-    final c = widget.cari;
-    final isAlacak = c.bakiye > 0;
-    final isBorc   = c.bakiye < 0;
+    final c    = context.colors;
+    final cari = widget.cari;
+    final isAlacak = cari.bakiye > 0;
+    final isBorc   = cari.bakiye < 0;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hover = true),
@@ -247,13 +253,13 @@ class _CariCardState extends State<_CariCard> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
         decoration: BoxDecoration(
-          color: _hover ? AppColors.bgTertiary : AppColors.bgCard,
+          color: _hover ? c.bgTertiary : c.bgCard,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: _hover ? AppColors.teal.withAlpha(60) : AppColors.border),
+            color: _hover ? AppColors.teal.withAlpha(60) : c.border),
         ),
         child: InkWell(
-          onTap: () => widget.vm.cariSec(c),
+          onTap: () => widget.vm.cariSec(cari),
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -264,7 +270,7 @@ class _CariCardState extends State<_CariCard> {
                   radius: 20,
                   backgroundColor: AppColors.teal.withAlpha(30),
                   child: Text(
-                    c.ad.isNotEmpty ? c.ad[0].toUpperCase() : '?',
+                    cari.ad.isNotEmpty ? cari.ad[0].toUpperCase() : '?',
                     style: GoogleFonts.outfit(
                       color: AppColors.teal, fontWeight: FontWeight.w700, fontSize: 16),
                   ),
@@ -276,17 +282,17 @@ class _CariCardState extends State<_CariCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(c.ad,
+                      Text(cari.ad,
                         style: GoogleFonts.outfit(
-                          color: AppColors.textPrimary,
+                          color: c.textPrimary,
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
                         )),
-                      if (c.telefon != null) ...[
+                      if (cari.telefon != null) ...[
                         const SizedBox(height: 2),
-                        Text(c.telefon!,
+                        Text(cari.telefon!,
                           style: GoogleFonts.outfit(
-                            color: AppColors.textSecondary, fontSize: 12)),
+                            color: c.textSecondary, fontSize: 12)),
                       ],
                     ],
                   ),
@@ -296,7 +302,7 @@ class _CariCardState extends State<_CariCard> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    if (c.bakiye != 0) ...[
+                    if (cari.bakiye != 0) ...[
                       Text(
                         isAlacak ? 'Alacak' : 'Borç',
                         style: GoogleFonts.outfit(
@@ -306,7 +312,7 @@ class _CariCardState extends State<_CariCard> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _fmtMoney.format(c.bakiye.abs()),
+                        _fmtMoney.format(cari.bakiye.abs()),
                         style: GoogleFonts.dmMono(
                           color: isAlacak ? AppColors.accentGreen : AppColors.accentRed,
                           fontWeight: FontWeight.w700,
@@ -316,7 +322,7 @@ class _CariCardState extends State<_CariCard> {
                     ] else
                       Text('Bakiye yok',
                         style: GoogleFonts.outfit(
-                          color: AppColors.textMuted, fontSize: 12)),
+                          color: c.textMuted, fontSize: 12)),
                   ],
                 ),
 
@@ -328,7 +334,7 @@ class _CariCardState extends State<_CariCard> {
                     message: 'Tahsilat Yap',
                     child: IconButton(
                       icon: const Icon(Icons.payment_rounded, size: 20, color: AppColors.accentGreen),
-                      onPressed: () => _showTahsilatDialog(context, c, widget.vm),
+                      onPressed: () => _showTahsilatDialog(context, cari, widget.vm),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                     ),
@@ -338,7 +344,7 @@ class _CariCardState extends State<_CariCard> {
                     message: 'Ödeme Yap',
                     child: IconButton(
                       icon: const Icon(Icons.send_rounded, size: 20, color: AppColors.accentRed),
-                      onPressed: () => _showTahsilatDialog(context, c, widget.vm, isOdeme: true),
+                      onPressed: () => _showTahsilatDialog(context, cari, widget.vm, isOdeme: true),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                     ),
@@ -347,8 +353,8 @@ class _CariCardState extends State<_CariCard> {
                 Tooltip(
                   message: 'Ekstre',
                   child: IconButton(
-                    icon: const Icon(Icons.receipt_long_rounded, size: 20, color: AppColors.textSecondary),
-                    onPressed: () => widget.vm.cariSec(c),
+                    icon: Icon(Icons.receipt_long_rounded, size: 20, color: c.textSecondary),
+                    onPressed: () => widget.vm.cariSec(cari),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                   ),
@@ -372,6 +378,7 @@ class _EkstrePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c    = context.colors;
     final cari = vm.secilenCari!;
 
     return Column(
@@ -379,14 +386,14 @@ class _EkstrePanel extends StatelessWidget {
         // Başlık
         Container(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-          decoration: const BoxDecoration(
-            color: AppColors.bgSecondary,
-            border: Border(bottom: BorderSide(color: AppColors.border, width: 0.5)),
+          decoration: BoxDecoration(
+            color: c.bgSecondary,
+            border: Border(bottom: BorderSide(color: c.border, width: 0.5)),
           ),
           child: Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textSecondary),
+                icon: Icon(Icons.arrow_back_rounded, color: c.textSecondary),
                 onPressed: vm.ekstreSifirla,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
@@ -407,11 +414,11 @@ class _EkstrePanel extends StatelessWidget {
                   children: [
                     Text(cari.ad,
                       style: GoogleFonts.outfit(
-                        color: AppColors.textPrimary, fontWeight: FontWeight.w700, fontSize: 16)),
+                        color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 16)),
                     if (cari.telefon != null)
                       Text(cari.telefon!,
                         style: GoogleFonts.outfit(
-                          color: AppColors.textSecondary, fontSize: 12)),
+                          color: c.textSecondary, fontSize: 12)),
                   ],
                 ),
               ),
@@ -421,7 +428,7 @@ class _EkstrePanel extends StatelessWidget {
                 children: [
                   Text(
                     cari.bakiye >= 0 ? 'Alacak Bakiyesi' : 'Borç Bakiyesi',
-                    style: GoogleFonts.outfit(color: AppColors.textSecondary, fontSize: 11),
+                    style: GoogleFonts.outfit(color: c.textSecondary, fontSize: 11),
                   ),
                   Text(
                     _fmtMoney.format(cari.bakiye.abs()),
@@ -453,8 +460,8 @@ class _EkstrePanel extends StatelessWidget {
         // Ekstre başlığı
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          color: AppColors.bgTertiary,
-          child: Row(
+          color: c.bgTertiary,
+          child: const Row(
             children: [
               _ExCol('Tarih',    flex: 2),
               _ExCol('Tür',      flex: 2),
@@ -473,11 +480,11 @@ class _EkstrePanel extends StatelessWidget {
               : vm.ekstre.isEmpty
                   ? Center(
                       child: Text('Henüz hareket yok',
-                        style: GoogleFonts.outfit(color: AppColors.textSecondary, fontSize: 14)))
+                        style: GoogleFonts.outfit(color: c.textSecondary, fontSize: 14)))
                   : ListView.separated(
                       padding: EdgeInsets.zero,
                       separatorBuilder: (_, __) =>
-                          const Divider(height: 1, color: AppColors.border),
+                          Divider(height: 1, color: c.border),
                       itemCount: vm.ekstre.length,
                       itemBuilder: (_, i) => _ExstreRow(hareket: vm.ekstre[i]),
                     ),
@@ -495,12 +502,13 @@ class _ExCol extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Expanded(
       flex: flex,
       child: Text(label,
         textAlign: align,
         style: GoogleFonts.outfit(
-          color: AppColors.textSecondary,
+          color: c.textSecondary,
           fontSize: 11,
           fontWeight: FontWeight.w600,
         )),
@@ -514,6 +522,7 @@ class _ExstreRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final isBorcMu = hareket.tutar > 0;
     final tipLabel = switch (hareket.tip) {
       CariHareketTip.satis           => 'Satış',
@@ -529,7 +538,7 @@ class _ExstreRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(flex: 2, child: Text(_fmtDate.format(hareket.tarih),
-            style: GoogleFonts.dmMono(color: AppColors.textSecondary, fontSize: 11))),
+            style: GoogleFonts.dmMono(color: c.textSecondary, fontSize: 11))),
           Expanded(flex: 2, child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
@@ -542,11 +551,11 @@ class _ExstreRow extends StatelessWidget {
                 fontSize: 11, fontWeight: FontWeight.w600)),
           )),
           Expanded(flex: 2, child: Text(hareket.belgeNo ?? '—',
-            style: GoogleFonts.dmMono(color: AppColors.textMuted, fontSize: 11))),
+            style: GoogleFonts.dmMono(color: c.textMuted, fontSize: 11))),
           Expanded(flex: 3, child: Text(hareket.aciklama ?? '—',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.outfit(color: AppColors.textSecondary, fontSize: 12))),
+            style: GoogleFonts.outfit(color: c.textSecondary, fontSize: 12))),
           Expanded(flex: 2, child: Text(
             _fmtMoney.format(hareket.tutar.abs()),
             textAlign: TextAlign.right,
@@ -600,18 +609,19 @@ class _CariFormDialogState extends State<_CariFormDialog> {
 
   @override
   void dispose() {
-    for (final c in [_adCtrl, _telCtrl, _epostaCtrl, _adresCtrl, _vkCtrl]) {
-      c.dispose();
+    for (final ctrl in [_adCtrl, _telCtrl, _epostaCtrl, _adresCtrl, _vkCtrl]) {
+      ctrl.dispose();
     }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return AlertDialog(
-      backgroundColor: AppColors.bgCard,
+      backgroundColor: c.bgCard,
       title: Text(widget.existing == null ? 'Yeni Cari' : 'Cari Düzenle',
-        style: GoogleFonts.outfit(color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
+        style: GoogleFonts.outfit(color: c.textPrimary, fontWeight: FontWeight.w700)),
       content: SizedBox(
         width: 420,
         child: SingleChildScrollView(
@@ -628,7 +638,7 @@ class _CariFormDialogState extends State<_CariFormDialog> {
                     onSelected: (_) => setState(() => _tip = t),
                     selectedColor: AppColors.teal.withAlpha(40),
                     labelStyle: GoogleFonts.outfit(
-                      color: _tip == t ? AppColors.teal : AppColors.textSecondary),
+                      color: _tip == t ? AppColors.teal : c.textSecondary),
                   ),
                 )).toList(),
               ),
@@ -645,7 +655,7 @@ class _CariFormDialogState extends State<_CariFormDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('İptal', style: TextStyle(color: AppColors.textSecondary)),
+          child: Text('İptal', style: TextStyle(color: c.textSecondary)),
         ),
         FilledButton(
           onPressed: _saving || _adCtrl.text.trim().isEmpty ? null : _kaydet,
@@ -690,15 +700,16 @@ class _DialogField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: TextField(
         controller: ctrl,
         autofocus: autofocus,
-        style: GoogleFonts.outfit(color: AppColors.textPrimary, fontSize: 13),
+        style: GoogleFonts.outfit(color: c.textPrimary, fontSize: 13),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: GoogleFonts.outfit(color: AppColors.textSecondary, fontSize: 12),
+          labelStyle: GoogleFonts.outfit(color: c.textSecondary, fontSize: 12),
         ),
       ),
     );
@@ -744,21 +755,22 @@ class _TahsilatDialogState extends State<_TahsilatDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final c     = context.colors;
     final vm    = widget.vm;
     final cari  = widget.cari;
     final title = widget.isOdeme ? 'Tedarikçi Ödemesi' : 'Tahsilat Yap';
 
     return AlertDialog(
-      backgroundColor: AppColors.bgCard,
+      backgroundColor: c.bgCard,
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title,
             style: GoogleFonts.outfit(
-              color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
+              color: c.textPrimary, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
           Text(cari.ad,
-            style: GoogleFonts.outfit(color: AppColors.textSecondary, fontSize: 13)),
+            style: GoogleFonts.outfit(color: c.textSecondary, fontSize: 13)),
           Text(
             '${widget.isOdeme ? "Borç Bakiyesi" : "Alacak Bakiyesi"}: ${_fmtMoney.format(cari.bakiye.abs())}',
             style: GoogleFonts.dmMono(
@@ -777,10 +789,10 @@ class _TahsilatDialogState extends State<_TahsilatDialog> {
               controller: _tutarCtrl,
               autofocus: true,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              style: GoogleFonts.dmMono(color: AppColors.textPrimary, fontSize: 16),
+              style: GoogleFonts.dmMono(color: c.textPrimary, fontSize: 16),
               decoration: InputDecoration(
                 labelText: 'Tutar (₺)',
-                labelStyle: GoogleFonts.outfit(color: AppColors.textSecondary),
+                labelStyle: GoogleFonts.outfit(color: c.textSecondary),
                 prefixIcon: const Icon(Icons.currency_lira_rounded, color: AppColors.teal),
               ),
             ),
@@ -788,25 +800,25 @@ class _TahsilatDialogState extends State<_TahsilatDialog> {
             // Kasa seçimi
             DropdownButtonFormField<String>(
               value: _kasaId,
-              dropdownColor: AppColors.bgCard,
+              dropdownColor: c.bgCard,
               decoration: InputDecoration(
                 labelText: 'Kasa',
-                labelStyle: GoogleFonts.outfit(color: AppColors.textSecondary),
+                labelStyle: GoogleFonts.outfit(color: c.textSecondary),
               ),
               items: vm.kasalar.map((k) => DropdownMenuItem(
                 value: k.id,
                 child: Text(k.ad,
-                  style: GoogleFonts.outfit(color: AppColors.textPrimary)),
+                  style: GoogleFonts.outfit(color: c.textPrimary)),
               )).toList(),
               onChanged: (v) => setState(() => _kasaId = v ?? 'nakit'),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: _aciklamaCtrl,
-              style: GoogleFonts.outfit(color: AppColors.textPrimary, fontSize: 13),
+              style: GoogleFonts.outfit(color: c.textPrimary, fontSize: 13),
               decoration: InputDecoration(
                 labelText: 'Açıklama (opsiyonel)',
-                labelStyle: GoogleFonts.outfit(color: AppColors.textSecondary),
+                labelStyle: GoogleFonts.outfit(color: c.textSecondary),
               ),
             ),
           ],
@@ -815,7 +827,7 @@ class _TahsilatDialogState extends State<_TahsilatDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('İptal', style: TextStyle(color: AppColors.textSecondary)),
+          child: Text('İptal', style: TextStyle(color: c.textSecondary)),
         ),
         FilledButton(
           onPressed: _saving ? null : _kaydet,

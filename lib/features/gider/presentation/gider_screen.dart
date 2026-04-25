@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/theme/app_color_scheme.dart';
 import '../../terminal/data/models/gider_model.dart';
 import '../viewmodel/gider_viewmodel.dart';
 
@@ -32,6 +33,7 @@ class _GiderScreenState extends State<GiderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Consumer<GiderViewModel>(
       builder: (_, vm, __) => Column(
         children: [
@@ -42,7 +44,7 @@ class _GiderScreenState extends State<GiderScreen> {
               children: [
                 // Sol: gider listesi
                 Expanded(flex: 3, child: _GiderList(vm: vm)),
-                const VerticalDivider(width: 1, color: AppColors.border),
+                VerticalDivider(width: 1, color: c.border),
                 // Sağ: özet paneli
                 SizedBox(width: 260, child: _GiderOzetPanel(vm: vm)),
               ],
@@ -62,11 +64,12 @@ class _GiderHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
-      decoration: const BoxDecoration(
-        color: AppColors.bgSecondary,
-        border: Border(bottom: BorderSide(color: AppColors.border, width: 0.5)),
+      decoration: BoxDecoration(
+        color: c.bgSecondary,
+        border: Border(bottom: BorderSide(color: c.border, width: 0.5)),
       ),
       child: Row(
         children: [
@@ -75,12 +78,12 @@ class _GiderHeader extends StatelessWidget {
             children: [
               Text('Gider Yönetimi',
                 style: GoogleFonts.outfit(
-                  color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
+                  color: c.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
               const SizedBox(height: 2),
               Text(
                 '${DateFormat('dd MMM', 'tr_TR').format(vm.baslangic)} – '
                 '${DateFormat('dd MMM yyyy', 'tr_TR').format(vm.bitis)}',
-                style: GoogleFonts.outfit(color: AppColors.textSecondary, fontSize: 12),
+                style: GoogleFonts.outfit(color: c.textSecondary, fontSize: 12),
               ),
             ],
           ),
@@ -115,6 +118,7 @@ class _AySecici extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c   = context.colors;
     final now = DateTime.now();
     final aylar = List.generate(6, (i) {
       final d = DateTime(now.year, now.month - i, 1);
@@ -123,11 +127,11 @@ class _AySecici extends StatelessWidget {
 
     return DropdownButton<DateTime>(
       value: DateTime(vm.baslangic.year, vm.baslangic.month, 1),
-      dropdownColor: AppColors.bgCard,
+      dropdownColor: c.bgCard,
       underline: const SizedBox(),
-      style: GoogleFonts.outfit(color: AppColors.textPrimary, fontSize: 13),
-      icon: const Icon(Icons.keyboard_arrow_down_rounded,
-        color: AppColors.textSecondary, size: 20),
+      style: GoogleFonts.outfit(color: c.textPrimary, fontSize: 13),
+      icon: Icon(Icons.keyboard_arrow_down_rounded,
+        color: c.textSecondary, size: 20),
       items: aylar.map((d) => DropdownMenuItem(
         value: d,
         child: Text(DateFormat('MMMM yyyy', 'tr_TR').format(d)),
@@ -147,6 +151,7 @@ class _GiderList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     if (vm.loading) {
       return const Center(child: CircularProgressIndicator(color: AppColors.teal));
     }
@@ -156,10 +161,10 @@ class _GiderList extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.money_off_rounded, size: 56, color: AppColors.textSecondary),
+            Icon(Icons.money_off_rounded, size: 56, color: c.textSecondary),
             const SizedBox(height: 12),
             Text('Bu dönemde gider yok',
-              style: GoogleFonts.outfit(color: AppColors.textSecondary, fontSize: 14)),
+              style: GoogleFonts.outfit(color: c.textSecondary, fontSize: 14)),
             const SizedBox(height: 8),
             TextButton.icon(
               onPressed: () => _showGiderDialog(context, vm),
@@ -176,8 +181,8 @@ class _GiderList extends StatelessWidget {
         // Tablo başlığı
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          color: AppColors.bgTertiary,
-          child: Row(
+          color: c.bgTertiary,
+          child: const Row(
             children: [
               _HCol('Tarih',     flex: 2),
               _HCol('Kategori',  flex: 2),
@@ -191,7 +196,7 @@ class _GiderList extends StatelessWidget {
           child: ListView.separated(
             padding: EdgeInsets.zero,
             separatorBuilder: (_, __) =>
-                const Divider(height: 1, color: AppColors.border),
+                Divider(height: 1, color: c.border),
             itemCount: vm.giderler.length,
             itemBuilder: (_, i) => _GiderRow(gider: vm.giderler[i]),
           ),
@@ -209,12 +214,13 @@ class _HCol extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Expanded(
       flex: flex,
       child: Text(label,
         textAlign: align,
         style: GoogleFonts.outfit(
-          color: AppColors.textSecondary,
+          color: c.textSecondary,
           fontSize: 11,
           fontWeight: FontWeight.w600,
         )),
@@ -234,31 +240,32 @@ class _GiderRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
         children: [
           Expanded(flex: 2, child: Text(_fmtDate.format(gider.tarih),
-            style: GoogleFonts.dmMono(color: AppColors.textSecondary, fontSize: 11))),
+            style: GoogleFonts.dmMono(color: c.textSecondary, fontSize: 11))),
           Expanded(flex: 2, child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: _kategoriColor(gider.kategori).withAlpha(25),
+              color: _kategoriColor(gider.kategori, c).withAlpha(25),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(gider.kategoriLabel,
               style: GoogleFonts.outfit(
-                color: _kategoriColor(gider.kategori),
+                color: _kategoriColor(gider.kategori, c),
                 fontSize: 11, fontWeight: FontWeight.w600)),
           )),
           Expanded(flex: 4, child: Text(
             gider.aciklama ?? '—',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.outfit(color: AppColors.textSecondary, fontSize: 12))),
+            style: GoogleFonts.outfit(color: c.textSecondary, fontSize: 12))),
           Expanded(flex: 2, child: Text(
             _kasaLabels[gider.kasaId] ?? gider.kasaId,
-            style: GoogleFonts.outfit(color: AppColors.textMuted, fontSize: 12))),
+            style: GoogleFonts.outfit(color: c.textMuted, fontSize: 12))),
           Expanded(flex: 2, child: Text(
             _fmtMoney.format(gider.tutar),
             textAlign: TextAlign.right,
@@ -270,13 +277,13 @@ class _GiderRow extends StatelessWidget {
     );
   }
 
-  Color _kategoriColor(GiderKategori k) => switch (k) {
+  Color _kategoriColor(GiderKategori k, AppColorScheme c) => switch (k) {
     GiderKategori.kira      => AppColors.gold,
     GiderKategori.fatura    => const Color(0xFF6CB4E4),
     GiderKategori.personel  => const Color(0xFFB784A7),
     GiderKategori.malzeme   => const Color(0xFF7EC8A4),
     GiderKategori.bakim     => const Color(0xFFFF8C42),
-    GiderKategori.diger     => AppColors.textSecondary,
+    GiderKategori.diger     => c.textSecondary,
   };
 }
 
@@ -288,17 +295,18 @@ class _GiderOzetPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c    = context.colors;
     final ozet = vm.kategoriOzeti;
 
     return Container(
-      color: AppColors.bgSecondary,
+      color: c.bgSecondary,
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Dönem Özeti',
             style: GoogleFonts.outfit(
-              color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
+              color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
           const SizedBox(height: 16),
 
           // Toplam
@@ -314,7 +322,7 @@ class _GiderOzetPanel extends StatelessWidget {
               children: [
                 Text('Toplam Gider',
                   style: GoogleFonts.outfit(
-                    color: AppColors.textSecondary, fontSize: 12)),
+                    color: c.textSecondary, fontSize: 12)),
                 Text(_fmtMoney.format(vm.toplamGider),
                   style: GoogleFonts.dmMono(
                     color: AppColors.accentRed,
@@ -326,7 +334,7 @@ class _GiderOzetPanel extends StatelessWidget {
 
           Text('Kategorilere Göre',
             style: GoogleFonts.outfit(
-              color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
+              color: c.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
 
           ...ozet.entries.map((e) => Padding(
@@ -335,7 +343,7 @@ class _GiderOzetPanel extends StatelessWidget {
               label:   _kategoriLabel(e.key),
               tutar:   e.value,
               toplam:  vm.toplamGider,
-              color:   _kategoriColor(e.key),
+              color:   _kategoriColor(e.key, c),
             ),
           )),
         ],
@@ -352,13 +360,13 @@ class _GiderOzetPanel extends StatelessWidget {
     GiderKategori.diger     => 'Diğer',
   };
 
-  Color _kategoriColor(GiderKategori k) => switch (k) {
+  Color _kategoriColor(GiderKategori k, AppColorScheme c) => switch (k) {
     GiderKategori.kira      => AppColors.gold,
     GiderKategori.fatura    => const Color(0xFF6CB4E4),
     GiderKategori.personel  => const Color(0xFFB784A7),
     GiderKategori.malzeme   => const Color(0xFF7EC8A4),
     GiderKategori.bakim     => const Color(0xFFFF8C42),
-    GiderKategori.diger     => AppColors.textSecondary,
+    GiderKategori.diger     => c.textSecondary,
   };
 }
 
@@ -374,6 +382,7 @@ class _KategoriBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c    = context.colors;
     final oran = toplam > 0 ? (tutar / toplam).clamp(0.0, 1.0) : 0.0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -382,7 +391,7 @@ class _KategoriBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(label,
-              style: GoogleFonts.outfit(color: AppColors.textSecondary, fontSize: 11)),
+              style: GoogleFonts.outfit(color: c.textSecondary, fontSize: 11)),
             Text(_fmtMoney.format(tutar),
               style: GoogleFonts.dmMono(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
           ],
@@ -435,11 +444,12 @@ class _GiderFormDialogState extends State<_GiderFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return AlertDialog(
-      backgroundColor: AppColors.bgCard,
+      backgroundColor: c.bgCard,
       title: Text('Gider Ekle',
         style: GoogleFonts.outfit(
-          color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
+          color: c.textPrimary, fontWeight: FontWeight.w700)),
       content: SizedBox(
         width: 380,
         child: Column(
@@ -448,15 +458,15 @@ class _GiderFormDialogState extends State<_GiderFormDialog> {
             // Kategori
             DropdownButtonFormField<GiderKategori>(
               value: _kategori,
-              dropdownColor: AppColors.bgCard,
+              dropdownColor: c.bgCard,
               decoration: InputDecoration(
                 labelText: 'Kategori',
-                labelStyle: GoogleFonts.outfit(color: AppColors.textSecondary),
+                labelStyle: GoogleFonts.outfit(color: c.textSecondary),
               ),
               items: GiderKategori.values.map((k) => DropdownMenuItem(
                 value: k,
                 child: Text(_kategoriLabel(k),
-                  style: GoogleFonts.outfit(color: AppColors.textPrimary)),
+                  style: GoogleFonts.outfit(color: c.textPrimary)),
               )).toList(),
               onChanged: (v) => setState(() => _kategori = v ?? GiderKategori.diger),
             ),
@@ -465,34 +475,34 @@ class _GiderFormDialogState extends State<_GiderFormDialog> {
               controller: _tutarCtrl,
               autofocus: true,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              style: GoogleFonts.dmMono(color: AppColors.textPrimary, fontSize: 16),
+              style: GoogleFonts.dmMono(color: c.textPrimary, fontSize: 16),
               decoration: InputDecoration(
                 labelText: 'Tutar (₺) *',
-                labelStyle: GoogleFonts.outfit(color: AppColors.textSecondary),
+                labelStyle: GoogleFonts.outfit(color: c.textSecondary),
                 prefixIcon: const Icon(Icons.currency_lira_rounded, color: AppColors.accentRed),
               ),
             ),
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
               value: _kasaId,
-              dropdownColor: AppColors.bgCard,
+              dropdownColor: c.bgCard,
               decoration: InputDecoration(
                 labelText: 'Ödeyen Kasa',
-                labelStyle: GoogleFonts.outfit(color: AppColors.textSecondary),
+                labelStyle: GoogleFonts.outfit(color: c.textSecondary),
               ),
               items: widget.vm.kasalar.map((k) => DropdownMenuItem(
                 value: k.id,
-                child: Text(k.ad, style: GoogleFonts.outfit(color: AppColors.textPrimary)),
+                child: Text(k.ad, style: GoogleFonts.outfit(color: c.textPrimary)),
               )).toList(),
               onChanged: (v) => setState(() => _kasaId = v ?? 'nakit'),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: _aciklamaCtrl,
-              style: GoogleFonts.outfit(color: AppColors.textPrimary, fontSize: 13),
+              style: GoogleFonts.outfit(color: c.textPrimary, fontSize: 13),
               decoration: InputDecoration(
                 labelText: 'Açıklama (opsiyonel)',
-                labelStyle: GoogleFonts.outfit(color: AppColors.textSecondary),
+                labelStyle: GoogleFonts.outfit(color: c.textSecondary),
               ),
             ),
           ],
@@ -501,7 +511,7 @@ class _GiderFormDialogState extends State<_GiderFormDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('İptal', style: TextStyle(color: AppColors.textSecondary)),
+          child: Text('İptal', style: TextStyle(color: c.textSecondary)),
         ),
         FilledButton(
           onPressed: _saving ? null : _kaydet,

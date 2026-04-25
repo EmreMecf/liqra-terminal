@@ -32,6 +32,9 @@ dependencies:
   # Utils
   intl: ^0.20.2
   uuid: ^4.5.1
+  shared_preferences: ^2.3.2
+  csv: ^6.0.0                   # CSV parse (POS export)
+  file_picker: ^8.1.2           # Windows dosya seçici
 
 dev_dependencies:
   flutter_test:

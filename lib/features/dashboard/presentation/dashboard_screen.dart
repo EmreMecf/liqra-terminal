@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/theme/app_color_scheme.dart';
 import '../../terminal/data/models/sale_model.dart';
 import '../viewmodel/dashboard_viewmodel.dart';
 
@@ -92,6 +93,7 @@ class _DashboardHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Row(
       children: [
         Column(
@@ -99,9 +101,9 @@ class _DashboardHeader extends StatelessWidget {
           children: [
             Text('Dashboard',
               style: GoogleFonts.outfit(
-                color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.w700)),
+                color: c.textPrimary, fontSize: 20, fontWeight: FontWeight.w700)),
             Text(DateFormat('dd MMMM yyyy, EEEE', 'tr_TR').format(DateTime.now()),
-              style: GoogleFonts.outfit(color: AppColors.textSecondary, fontSize: 12)),
+              style: GoogleFonts.outfit(color: c.textSecondary, fontSize: 12)),
           ],
         ),
         const Spacer(),
@@ -115,7 +117,7 @@ class _DashboardHeader extends StatelessWidget {
             onSelected: (_) => vm.setDonem(d),
             selectedColor: AppColors.teal.withAlpha(40),
             labelStyle: GoogleFonts.outfit(
-              color: vm.donem == d ? AppColors.teal : AppColors.textSecondary),
+              color: vm.donem == d ? AppColors.teal : c.textSecondary),
           ),
         )),
         const SizedBox(width: 10),
@@ -123,7 +125,7 @@ class _DashboardHeader extends StatelessWidget {
           icon: vm.loading
               ? const SizedBox(width: 18, height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.teal))
-              : const Icon(Icons.refresh_rounded, color: AppColors.textSecondary, size: 20),
+              : Icon(Icons.refresh_rounded, color: c.textSecondary, size: 20),
           onPressed: vm.loading ? null : vm.yenile,
         ),
       ],
@@ -198,12 +200,13 @@ class _KpiCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
+        color: c.bgCard,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: c.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,16 +227,16 @@ class _KpiCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(value,
             style: GoogleFonts.dmMono(
-              color: AppColors.textPrimary,
+              color: c.textPrimary,
               fontSize: 22, fontWeight: FontWeight.w800)),
           const SizedBox(height: 2),
           Text(label,
             style: GoogleFonts.outfit(
-              color: AppColors.textSecondary, fontSize: 12)),
+              color: c.textSecondary, fontSize: 12)),
           const SizedBox(height: 4),
           Text(sublabel,
             style: GoogleFonts.outfit(
-              color: AppColors.textMuted, fontSize: 11)),
+              color: c.textMuted, fontSize: 11)),
         ],
       ),
     );
@@ -248,29 +251,30 @@ class _CiroChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c    = context.colors;
     final data = vm.gunlukCiro;
 
     return Container(
       height: 240,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
+        color: c.bgCard,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: c.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Son 7 Gün Ciro',
             style: GoogleFonts.outfit(
-              color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
+              color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
           const SizedBox(height: 16),
           Expanded(
             child: data.isEmpty || data.every((e) => e.value == 0)
                 ? Center(
                     child: Text('Veri yok',
                       style: GoogleFonts.outfit(
-                        color: AppColors.textSecondary, fontSize: 13)))
+                        color: c.textSecondary, fontSize: 13)))
                 : BarChart(
                     BarChartData(
                       alignment: BarChartAlignment.spaceAround,
@@ -285,7 +289,7 @@ class _CiroChart extends StatelessWidget {
                           backDrawRodData: BackgroundBarChartRodData(
                             show: true,
                             toY: data.map((e) => e.value).reduce((a, b) => a > b ? a : b) * 1.2,
-                            color: AppColors.bgTertiary,
+                            color: c.bgTertiary,
                           ),
                         )],
                       )).toList(),
@@ -305,7 +309,7 @@ class _CiroChart extends StatelessWidget {
                                 padding: const EdgeInsets.only(top: 4),
                                 child: Text(data[idx].key,
                                   style: GoogleFonts.outfit(
-                                    color: AppColors.textMuted, fontSize: 10)),
+                                    color: c.textMuted, fontSize: 10)),
                               );
                             },
                           ),
@@ -313,7 +317,7 @@ class _CiroChart extends StatelessWidget {
                       ),
                       barTouchData: BarTouchData(
                         touchTooltipData: BarTouchTooltipData(
-                          getTooltipColor: (_) => AppColors.bgSecondary,
+                          getTooltipColor: (_) => c.bgSecondary,
                           getTooltipItem: (group, _, rod, __) => BarTooltipItem(
                             _fmtMoney.format(rod.toY),
                             GoogleFonts.dmMono(
@@ -339,12 +343,13 @@ class _KasalarCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
+        color: c.bgCard,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: c.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -353,7 +358,7 @@ class _KasalarCard extends StatelessWidget {
             children: [
               Text('Kasa Bakiyeleri',
                 style: GoogleFonts.outfit(
-                  color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
+                  color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
               const Spacer(),
               Text(_fmtMoney.format(vm.kasaToplami),
                 style: GoogleFonts.dmMono(
@@ -368,10 +373,10 @@ class _KasalarCard extends StatelessWidget {
                 Container(
                   width: 32, height: 32,
                   decoration: BoxDecoration(
-                    color: AppColors.bgTertiary,
+                    color: c.bgTertiary,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(_kasaIcon(k.id), size: 16, color: AppColors.textSecondary),
+                  child: Icon(_kasaIcon(k.id), size: 16, color: c.textSecondary),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -380,16 +385,16 @@ class _KasalarCard extends StatelessWidget {
                     children: [
                       Text(k.ad,
                         style: GoogleFonts.outfit(
-                          color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w500)),
+                          color: c.textPrimary, fontSize: 13, fontWeight: FontWeight.w500)),
                       Text(_kasaTipLabel(k.id),
                         style: GoogleFonts.outfit(
-                          color: AppColors.textMuted, fontSize: 10)),
+                          color: c.textMuted, fontSize: 10)),
                     ],
                   ),
                 ),
                 Text(_fmtMoney.format(k.bakiye),
                   style: GoogleFonts.dmMono(
-                    color: k.bakiye >= 0 ? AppColors.textPrimary : AppColors.accentRed,
+                    color: k.bakiye >= 0 ? c.textPrimary : AppColors.accentRed,
                     fontWeight: FontWeight.w700, fontSize: 13)),
               ],
             ),
@@ -420,15 +425,16 @@ class _KritikStokCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
+        color: c.bgCard,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: vm.kritikStoklar.isNotEmpty
               ? AppColors.gold.withAlpha(60)
-              : AppColors.border),
+              : c.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -439,7 +445,7 @@ class _KritikStokCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text('Kritik Stok',
                 style: GoogleFonts.outfit(
-                  color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
+                  color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
               const Spacer(),
               if (vm.kritikStoklar.isNotEmpty)
                 Container(
@@ -472,7 +478,7 @@ class _KritikStokCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.outfit(
-                        color: AppColors.textPrimary, fontSize: 12)),
+                        color: c.textPrimary, fontSize: 12)),
                   ),
                   const SizedBox(width: 8),
                   Container(
@@ -507,26 +513,27 @@ class _SonSatislarCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
+        color: c.bgCard,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: c.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Bugünkü Satışlar',
             style: GoogleFonts.outfit(
-              color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
+              color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
           const SizedBox(height: 12),
           if (vm.satislar.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Text('Bugün henüz satış yapılmadı',
                 style: GoogleFonts.outfit(
-                  color: AppColors.textSecondary, fontSize: 13)),
+                  color: c.textSecondary, fontSize: 13)),
             )
           else
             ...vm.satislar.take(8).map((s) {
@@ -544,7 +551,7 @@ class _SonSatislarCard extends StatelessWidget {
                       child: Text(
                         s.cariAdi ?? DateFormat('HH:mm').format(s.tarih),
                         style: GoogleFonts.outfit(
-                          color: AppColors.textPrimary, fontSize: 13),
+                          color: c.textPrimary, fontSize: 13),
                       ),
                     ),
                     Container(
@@ -560,7 +567,7 @@ class _SonSatislarCard extends StatelessWidget {
                     const SizedBox(width: 10),
                     Text(_fmtMoney.format(s.toplam),
                       style: GoogleFonts.dmMono(
-                        color: AppColors.textPrimary,
+                        color: c.textPrimary,
                         fontWeight: FontWeight.w700, fontSize: 13)),
                   ],
                 ),

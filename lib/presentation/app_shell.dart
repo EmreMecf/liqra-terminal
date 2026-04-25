@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 import '../core/constants/app_colors.dart';
+import '../core/theme/app_color_scheme.dart';
+import '../core/theme/theme_provider.dart';
 import '../features/cari/presentation/cari_screen.dart';
 import '../features/dashboard/presentation/dashboard_screen.dart';
 import '../features/gider/presentation/gider_screen.dart';
+import '../features/rapor/presentation/rapor_screen.dart';
 import '../features/terminal/presentation/terminal_main_screen.dart';
+import '../features/urun/presentation/urun_screen.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
 // APP SHELL — Sol sidebar + içerik alanı
@@ -42,6 +47,16 @@ class _AppShellState extends State<AppShell> {
       label: 'Dashboard',
       hint:  'Raporlar & özet',
     ),
+    _NavDest(
+      icon:  Icons.receipt_long_rounded,
+      label: 'Raporlar',
+      hint:  'Satış geçmişi & analiz',
+    ),
+    _NavDest(
+      icon:  Icons.inventory_2_rounded,
+      label: 'Stok',
+      hint:  'Ürün yönetimi & CSV aktarım',
+    ),
   ];
 
   // Ekranları cache'leyerek gereksiz rebuild önlenir
@@ -50,12 +65,15 @@ class _AppShellState extends State<AppShell> {
     CariScreen(),
     GiderScreen(),
     DashboardScreen(),
+    RaporScreen(),
+    UrunScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Scaffold(
-      backgroundColor: AppColors.bgPrimary,
+      backgroundColor: c.bgPrimary,
       body: Row(
         children: [
           // ── Sol Sidebar ──────────────────────────────────────────────────
@@ -64,7 +82,7 @@ class _AppShellState extends State<AppShell> {
             destinations:  _destinations,
             onSelect:      (i) => setState(() => _selectedIndex = i),
           ),
-          const VerticalDivider(width: 1, color: AppColors.border),
+          VerticalDivider(width: 1, color: c.border),
           // ── İçerik ───────────────────────────────────────────────────────
           Expanded(
             child: IndexedStack(
@@ -88,8 +106,8 @@ class _NavDest {
 }
 
 class _Sidebar extends StatelessWidget {
-  final int              selectedIndex;
-  final List<_NavDest>   destinations;
+  final int               selectedIndex;
+  final List<_NavDest>    destinations;
   final ValueChanged<int> onSelect;
 
   const _Sidebar({
@@ -100,14 +118,17 @@ class _Sidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c  = context.colors;
+    final tp = context.watch<ThemeProvider>();
+
     return Container(
       width: 72,
-      color: AppColors.bgSecondary,
+      color: c.bgSecondary,
       child: Column(
         children: [
           const SizedBox(height: 16),
 
-          // Logo
+          // ── Logo ─────────────────────────────────────────────────────────
           Container(
             width: 40, height: 40,
             decoration: BoxDecoration(
@@ -119,7 +140,7 @@ class _Sidebar extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          // Nav öğeleri
+          // ── Nav öğeleri ───────────────────────────────────────────────────
           ...destinations.asMap().entries.map((entry) {
             final i    = entry.key;
             final dest = entry.value;
@@ -140,7 +161,8 @@ class _Sidebar extends StatelessWidget {
                       color: sel ? AppColors.teal.withAlpha(22) : Colors.transparent,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: sel ? AppColors.teal.withAlpha(60) : Colors.transparent),
+                        color: sel ? AppColors.teal.withAlpha(60) : Colors.transparent,
+                      ),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -148,14 +170,14 @@ class _Sidebar extends StatelessWidget {
                         Icon(
                           dest.icon,
                           size: 22,
-                          color: sel ? AppColors.teal : AppColors.textSecondary,
+                          color: sel ? AppColors.teal : c.textSecondary,
                         ),
                         const SizedBox(height: 4),
                         Text(
                           dest.label,
                           style: GoogleFonts.outfit(
                             fontSize: 9,
-                            color: sel ? AppColors.teal : AppColors.textSecondary,
+                            color:      sel ? AppColors.teal : c.textSecondary,
                             fontWeight: sel ? FontWeight.w700 : FontWeight.w400,
                           ),
                         ),
@@ -169,12 +191,42 @@ class _Sidebar extends StatelessWidget {
 
           const Spacer(),
 
-          // Versiyon
+          // ── Tema toggle butonu ────────────────────────────────────────────
+          Tooltip(
+            message: tp.isDark ? 'Açık Temaya Geç' : 'Koyu Temaya Geç',
+            preferBelow: false,
+            child: InkWell(
+              onTap: () => tp.toggle(),
+              borderRadius: BorderRadius.circular(10),
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  transitionBuilder: (child, anim) =>
+                      RotationTransition(
+                        turns: Tween(begin: 0.75, end: 1.0).animate(anim),
+                        child: FadeTransition(opacity: anim, child: child),
+                      ),
+                  child: Icon(
+                    tp.isDark
+                        ? Icons.wb_sunny_rounded
+                        : Icons.nightlight_round,
+                    key: ValueKey(tp.isDark),
+                    size: 20,
+                    color: c.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // ── Versiyon ──────────────────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Text('v1.0',
-              style: GoogleFonts.dmMono(
-                color: AppColors.textMuted, fontSize: 9)),
+            padding: const EdgeInsets.only(bottom: 12, top: 4),
+            child: Text(
+              'v2.0',
+              style: GoogleFonts.dmMono(color: c.textMuted, fontSize: 9),
+            ),
           ),
         ],
       ),

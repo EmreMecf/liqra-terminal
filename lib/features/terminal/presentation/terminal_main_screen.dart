@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_shortcuts.dart';
 import '../../../core/services/printer_service.dart';
+import '../../../core/theme/app_color_scheme.dart';
 import '../data/models/cart_item.dart';
 import '../viewmodel/terminal_viewmodel.dart';
 
@@ -17,24 +18,25 @@ final _fmtMoney = NumberFormat.currency(locale: 'tr_TR', symbol: '₺', decimalD
 Future<void> showBarcodeDialog(BuildContext context) async {
   final ctrl = TextEditingController();
   final vm   = context.read<TerminalViewModel>();
+  final c    = context.colors;
 
   await showDialog(
     context: context,
     builder: (ctx) => AlertDialog(
-      backgroundColor: AppColors.bgCard,
+      backgroundColor: c.bgCard,
       title: Text('Manuel Barkod Gir',
-        style: GoogleFonts.outfit(color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
+        style: GoogleFonts.outfit(color: c.textPrimary, fontWeight: FontWeight.w700)),
       content: SizedBox(
         width: 320,
         child: TextField(
           controller: ctrl,
           autofocus: true,
-          style: GoogleFonts.dmMono(color: AppColors.textPrimary, fontSize: 16),
+          style: GoogleFonts.dmMono(color: c.textPrimary, fontSize: 16),
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d\-]'))],
           decoration: InputDecoration(
             hintText: 'Barkod numarasını girin...',
-            hintStyle: GoogleFonts.outfit(color: AppColors.textSecondary),
+            hintStyle: GoogleFonts.outfit(color: c.textSecondary),
             prefixIcon: const Icon(Icons.qr_code_rounded, color: AppColors.teal),
           ),
           onSubmitted: (v) {
@@ -46,7 +48,7 @@ Future<void> showBarcodeDialog(BuildContext context) async {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx),
-          child: const Text('İptal', style: TextStyle(color: AppColors.textSecondary)),
+          child: Text('İptal', style: TextStyle(color: c.textSecondary)),
         ),
         TextButton(
           onPressed: () {
@@ -92,6 +94,7 @@ class _TerminalMainScreenState extends State<TerminalMainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return KeyboardListener(
       focusNode: _keyFocus,
       autofocus: true,
@@ -104,7 +107,7 @@ class _TerminalMainScreenState extends State<TerminalMainScreen> {
         vm.handleKeyEvent(e);
       },
       child: Scaffold(
-        backgroundColor: AppColors.bgPrimary,
+        backgroundColor: c.bgPrimary,
         body: Column(
           children: [
             const _TopBar(),
@@ -112,7 +115,7 @@ class _TerminalMainScreenState extends State<TerminalMainScreen> {
               child: Row(
                 children: [
                   const Expanded(flex: 3, child: _ProductsPanel()),
-                  const VerticalDivider(width: 1, color: AppColors.border),
+                  VerticalDivider(width: 1, color: c.border),
                   const SizedBox(width: 340, child: _CartPanel()),
                 ],
               ),
@@ -133,12 +136,13 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       height: 52,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        color: AppColors.bgSecondary,
-        border: Border(bottom: BorderSide(color: AppColors.border, width: 0.5)),
+      decoration: BoxDecoration(
+        color: c.bgSecondary,
+        border: Border(bottom: BorderSide(color: c.border, width: 0.5)),
       ),
       child: Row(
         children: [
@@ -153,7 +157,7 @@ class _TopBar extends StatelessWidget {
           const SizedBox(width: 10),
           Text('Satış Terminali',
             style: GoogleFonts.outfit(
-              color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w700)),
+              color: c.textPrimary, fontSize: 15, fontWeight: FontWeight.w700)),
 
           const SizedBox(width: 24),
 
@@ -217,13 +221,14 @@ class _TopBar extends StatelessWidget {
   }
 
   void _showShortcuts(BuildContext context) {
+    final c = context.colors;
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: AppColors.bgCard,
+        backgroundColor: c.bgCard,
         title: Text('Klavye Kısayolları',
           style: GoogleFonts.outfit(
-            color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
+            color: c.textPrimary, fontWeight: FontWeight.w700)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: AppShortcuts.shortcuts.entries.map((e) => Padding(
@@ -234,9 +239,9 @@ class _TopBar extends StatelessWidget {
                   width: 60,
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: AppColors.bgTertiary,
+                    color: c.bgTertiary,
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: c.border),
                   ),
                   child: Text(e.key,
                     textAlign: TextAlign.center,
@@ -247,7 +252,7 @@ class _TopBar extends StatelessWidget {
                 Expanded(
                   child: Text(e.value,
                     style: GoogleFonts.outfit(
-                      color: AppColors.textSecondary, fontSize: 13)),
+                      color: c.textSecondary, fontSize: 13)),
                 ),
               ],
             ),
@@ -270,12 +275,13 @@ class _TopStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
-          style: GoogleFonts.outfit(color: AppColors.textSecondary, fontSize: 10)),
+          style: GoogleFonts.outfit(color: c.textSecondary, fontSize: 10)),
         Text(value,
           style: GoogleFonts.dmMono(
             color: AppColors.teal, fontSize: 13, fontWeight: FontWeight.w700)),
@@ -293,6 +299,7 @@ class _ToolbarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Tooltip(
       message: label,
       child: InkWell(
@@ -303,9 +310,9 @@ class _ToolbarButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.transparent,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: c.border),
           ),
-          child: Icon(icon, size: 18, color: AppColors.textSecondary),
+          child: Icon(icon, size: 18, color: c.textSecondary),
         ),
       ),
     );
@@ -321,12 +328,13 @@ class _ProductsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    final c = context.colors;
+    return Column(
       children: [
-        _SearchBar(),
-        _CategoryBar(),
-        Divider(height: 1, color: AppColors.border),
-        Expanded(child: _ProductGrid()),
+        const _SearchBar(),
+        const _CategoryBar(),
+        Divider(height: 1, color: c.border),
+        const Expanded(child: _ProductGrid()),
       ],
     );
   }
@@ -350,18 +358,19 @@ class _SearchBarState extends State<_SearchBar> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
       child: TextField(
         controller: _ctrl,
-        style: GoogleFonts.outfit(color: AppColors.textPrimary, fontSize: 14),
+        style: GoogleFonts.outfit(color: c.textPrimary, fontSize: 14),
         decoration: InputDecoration(
           hintText: 'Ürün ara veya barkod gir...',
-          hintStyle: GoogleFonts.outfit(color: AppColors.textSecondary, fontSize: 13),
-          prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textSecondary, size: 20),
+          hintStyle: GoogleFonts.outfit(color: c.textSecondary, fontSize: 13),
+          prefixIcon: Icon(Icons.search_rounded, color: c.textSecondary, size: 20),
           suffixIcon: _ctrl.text.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Icons.clear_rounded, size: 18, color: AppColors.textSecondary),
+                  icon: Icon(Icons.clear_rounded, size: 18, color: c.textSecondary),
                   onPressed: () {
                     _ctrl.clear();
                     context.read<TerminalViewModel>().setSearch('');
@@ -384,6 +393,7 @@ class _CategoryBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c          = context.colors;
     final vm         = context.watch<TerminalViewModel>();
     final categories = ['Tümü', ...vm.categories];
 
@@ -407,14 +417,14 @@ class _CategoryBar extends StatelessWidget {
               duration: const Duration(milliseconds: 150),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
-                color: selected ? AppColors.teal.withAlpha(22) : AppColors.bgCard,
+                color: selected ? AppColors.teal.withAlpha(22) : c.bgCard,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: selected ? AppColors.teal.withAlpha(80) : AppColors.border),
+                  color: selected ? AppColors.teal.withAlpha(80) : c.border),
               ),
               child: Text(cat,
                 style: GoogleFonts.outfit(
-                  color: selected ? AppColors.teal : AppColors.textSecondary,
+                  color: selected ? AppColors.teal : c.textSecondary,
                   fontSize: 12,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                 )),
@@ -431,6 +441,7 @@ class _ProductGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c        = context.colors;
     final vm       = context.watch<TerminalViewModel>();
     final products = vm.filteredProducts;
 
@@ -444,10 +455,10 @@ class _ProductGrid extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.inventory_2_outlined, size: 48, color: AppColors.textSecondary),
+            Icon(Icons.inventory_2_outlined, size: 48, color: c.textSecondary),
             const SizedBox(height: 12),
             Text('Ürün bulunamadı',
-              style: GoogleFonts.outfit(color: AppColors.textSecondary, fontSize: 14)),
+              style: GoogleFonts.outfit(color: c.textSecondary, fontSize: 14)),
           ],
         ),
       );
@@ -481,6 +492,7 @@ class _ProductCardState extends State<_ProductCard> {
 
   @override
   Widget build(BuildContext context) {
+    final c          = context.colors;
     final p          = widget.product;
     final outOfStock = p.isOutOfStock as bool;
     final lowStock   = p.isLowStock   as bool;
@@ -493,12 +505,12 @@ class _ProductCardState extends State<_ProductCard> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           decoration: BoxDecoration(
-            color: outOfStock ? AppColors.bgCard.withAlpha(128) : AppColors.bgCard,
+            color: outOfStock ? c.bgCard.withAlpha(128) : c.bgCard,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: _hover && !outOfStock
                   ? AppColors.teal.withAlpha(80)
-                  : AppColors.border),
+                  : c.border),
             boxShadow: _hover && !outOfStock
                 ? [BoxShadow(color: AppColors.teal.withAlpha(15), blurRadius: 12)]
                 : null,
@@ -514,25 +526,25 @@ class _ProductCardState extends State<_ProductCard> {
                       height: 56,
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: AppColors.bgTertiary,
+                        color: c.bgTertiary,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.inventory_2_outlined,
-                        color: AppColors.textSecondary, size: 28),
+                      child: Icon(Icons.inventory_2_outlined,
+                        color: c.textSecondary, size: 28),
                     ),
                     const SizedBox(height: 8),
                     Text(p.name as String,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.outfit(
-                        color: outOfStock ? AppColors.textSecondary : AppColors.textPrimary,
+                        color: outOfStock ? c.textSecondary : c.textPrimary,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       )),
                     const Spacer(),
                     Text(_fmtMoney.format(p.price as num),
                       style: GoogleFonts.dmMono(
-                        color: outOfStock ? AppColors.textSecondary : AppColors.teal,
+                        color: outOfStock ? c.textSecondary : AppColors.teal,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                       )),
@@ -542,7 +554,7 @@ class _ProductCardState extends State<_ProductCard> {
                       style: GoogleFonts.outfit(
                         color: outOfStock
                             ? AppColors.accentRed
-                            : lowStock ? AppColors.gold : AppColors.textSecondary,
+                            : lowStock ? AppColors.gold : c.textSecondary,
                         fontSize: 10,
                       ),
                     ),
@@ -567,7 +579,7 @@ class _ProductCardState extends State<_ProductCard> {
                 Positioned.fill(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: AppColors.bgPrimary.withAlpha(128),
+                      color: c.bgPrimary.withAlpha(128),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Center(
@@ -600,15 +612,16 @@ class _CartPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
-      color: AppColors.bgSecondary,
-      child: const Column(
+      color: c.bgSecondary,
+      child: Column(
         children: [
-          _CartHeader(),
-          Divider(height: 1, color: AppColors.border),
-          Expanded(child: _CartItemList()),
-          Divider(height: 1, color: AppColors.border),
-          _CartFooter(),
+          const _CartHeader(),
+          Divider(height: 1, color: c.border),
+          const Expanded(child: _CartItemList()),
+          Divider(height: 1, color: c.border),
+          const _CartFooter(),
         ],
       ),
     );
@@ -620,6 +633,7 @@ class _CartHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c  = context.colors;
     final vm = context.watch<TerminalViewModel>();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -629,7 +643,7 @@ class _CartHeader extends StatelessWidget {
           const SizedBox(width: 8),
           Text('Sepet',
             style: GoogleFonts.outfit(
-              color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w700)),
+              color: c.textPrimary, fontSize: 15, fontWeight: FontWeight.w700)),
           const SizedBox(width: 8),
           if (vm.cart.isNotEmpty)
             Container(
@@ -650,10 +664,10 @@ class _CartHeader extends StatelessWidget {
               child: InkWell(
                 onTap: () => _confirmClear(context, vm),
                 borderRadius: BorderRadius.circular(6),
-                child: const Padding(
-                  padding: EdgeInsets.all(4),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
                   child: Icon(Icons.delete_sweep_rounded,
-                    size: 18, color: AppColors.textSecondary),
+                    size: 18, color: c.textSecondary),
                 ),
               ),
             ),
@@ -663,19 +677,20 @@ class _CartHeader extends StatelessWidget {
   }
 
   void _confirmClear(BuildContext context, TerminalViewModel vm) {
+    final c = context.colors;
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: AppColors.bgCard,
+        backgroundColor: c.bgCard,
         title: Text('Sepeti Temizle',
           style: GoogleFonts.outfit(
-            color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
+            color: c.textPrimary, fontWeight: FontWeight.w700)),
         content: Text('Tüm ürünler sepetten kaldırılacak.',
-          style: GoogleFonts.outfit(color: AppColors.textSecondary)),
+          style: GoogleFonts.outfit(color: c.textSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('İptal', style: TextStyle(color: AppColors.textSecondary)),
+            child: Text('İptal', style: TextStyle(color: c.textSecondary)),
           ),
           TextButton(
             onPressed: () { vm.clearCart(); Navigator.pop(context); },
@@ -692,6 +707,7 @@ class _CartItemList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c  = context.colors;
     final vm = context.watch<TerminalViewModel>();
 
     if (vm.cart.isEmpty) {
@@ -699,14 +715,14 @@ class _CartItemList extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.shopping_cart_outlined,
-              size: 48, color: AppColors.textSecondary),
+            Icon(Icons.shopping_cart_outlined,
+              size: 48, color: c.textSecondary),
             const SizedBox(height: 12),
             Text('Sepet boş',
-              style: GoogleFonts.outfit(color: AppColors.textSecondary, fontSize: 13)),
+              style: GoogleFonts.outfit(color: c.textSecondary, fontSize: 13)),
             const SizedBox(height: 6),
             Text('Ürüne tıklayın veya barkod okutun',
-              style: GoogleFonts.outfit(color: AppColors.textMuted, fontSize: 11)),
+              style: GoogleFonts.outfit(color: c.textMuted, fontSize: 11)),
           ],
         ),
       );
@@ -714,8 +730,8 @@ class _CartItemList extends StatelessWidget {
 
     return ListView.separated(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      separatorBuilder: (_, __) => const Divider(
-        height: 1, indent: 16, endIndent: 16, color: AppColors.border),
+      separatorBuilder: (_, __) => Divider(
+        height: 1, indent: 16, endIndent: 16, color: c.border),
       itemCount: vm.cart.length,
       itemBuilder: (_, i) => _CartRow(item: vm.cart[i], index: i),
     );
@@ -736,6 +752,7 @@ class _CartRowState extends State<_CartRow> {
 
   @override
   Widget build(BuildContext context) {
+    final c    = context.colors;
     final vm   = context.read<TerminalViewModel>();
     final item = widget.item;
     final i    = widget.index;
@@ -745,7 +762,7 @@ class _CartRowState extends State<_CartRow> {
       onExit:  (_) => setState(() => _hover = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 100),
-        color: _hover ? AppColors.bgTertiary : Colors.transparent,
+        color: _hover ? c.bgTertiary : Colors.transparent,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           children: [
@@ -757,14 +774,14 @@ class _CartRowState extends State<_CartRow> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.outfit(
-                      color: AppColors.textPrimary,
+                      color: c.textPrimary,
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                     )),
                   const SizedBox(height: 2),
                   Text(_fmtMoney.format(item.product.price),
                     style: GoogleFonts.dmMono(
-                      color: AppColors.textSecondary, fontSize: 11)),
+                      color: c.textSecondary, fontSize: 11)),
                 ],
               ),
             ),
@@ -781,7 +798,7 @@ class _CartRowState extends State<_CartRow> {
                   child: Text('${item.quantity}',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.dmMono(
-                      color: AppColors.textPrimary,
+                      color: c.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                     )),
@@ -828,17 +845,18 @@ class _QtyButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(6),
       child: Container(
         width: 24, height: 24,
         decoration: BoxDecoration(
-          color: AppColors.bgCard,
+          color: c.bgCard,
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: c.border),
         ),
-        child: Icon(icon, size: 14, color: AppColors.textSecondary),
+        child: Icon(icon, size: 14, color: c.textSecondary),
       ),
     );
   }
@@ -851,6 +869,7 @@ class _CartFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c     = context.colors;
     final vm    = context.watch<TerminalViewModel>();
     final total = vm.cartTotal;
 
@@ -867,14 +886,14 @@ class _CartFooter extends StatelessWidget {
             small: true,
           ),
           const SizedBox(height: 12),
-          const Divider(color: AppColors.border, height: 1),
+          Divider(color: c.border, height: 1),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('TOPLAM',
                 style: GoogleFonts.outfit(
-                  color: AppColors.textPrimary,
+                  color: c.textPrimary,
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                 )),
@@ -905,7 +924,7 @@ class _CartFooter extends StatelessWidget {
                   label: 'Kart',
                   sublabel: 'F3',
                   icon: Icons.credit_card_rounded,
-                  color: AppColors.textSecondary,
+                  color: c.textSecondary,
                   enabled: vm.cart.isNotEmpty,
                   onTap: () => _completeSale(context, vm, OdemeTip.krediKarti),
                 ),
@@ -996,16 +1015,17 @@ class _FooterRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label,
           style: GoogleFonts.outfit(
-            color: AppColors.textSecondary,
+            color: c.textSecondary,
             fontSize: small ? 11 : 13)),
         Text(value,
           style: GoogleFonts.dmMono(
-            color: small ? AppColors.textSecondary : AppColors.textPrimary,
+            color: small ? c.textSecondary : c.textPrimary,
             fontSize: small ? 11 : 13)),
       ],
     );
@@ -1027,6 +1047,7 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 150),
       opacity: enabled ? 1.0 : 0.4,
@@ -1042,9 +1063,9 @@ class _ActionButton extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight)
                 : null,
-            color: primary ? null : AppColors.bgCard,
+            color: primary ? null : c.bgCard,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: primary ? color : AppColors.border),
+            border: Border.all(color: primary ? color : c.border),
             boxShadow: primary
                 ? [BoxShadow(
                     color: color.withAlpha(60),
@@ -1060,7 +1081,7 @@ class _ActionButton extends StatelessWidget {
               Expanded(
                 child: Text(label,
                   style: GoogleFonts.outfit(
-                    color: primary ? Colors.black87 : AppColors.textPrimary,
+                    color: primary ? Colors.black87 : c.textPrimary,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                   )),
@@ -1068,12 +1089,12 @@ class _ActionButton extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: primary ? Colors.black26 : AppColors.bgTertiary,
+                  color: primary ? Colors.black26 : c.bgTertiary,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(sublabel,
                   style: GoogleFonts.dmMono(
-                    color: primary ? Colors.white70 : AppColors.textSecondary,
+                    color: primary ? Colors.white70 : c.textSecondary,
                     fontSize: 10,
                   )),
               ),
@@ -1108,11 +1129,12 @@ class _CariPickerDialogState extends State<_CariPickerDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return AlertDialog(
-      backgroundColor: AppColors.bgCard,
+      backgroundColor: c.bgCard,
       title: Text('Müşteri Seç',
         style: GoogleFonts.outfit(
-          color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
+          color: c.textPrimary, fontWeight: FontWeight.w700)),
       content: SizedBox(
         width: 360,
         height: 400,
@@ -1120,7 +1142,7 @@ class _CariPickerDialogState extends State<_CariPickerDialog> {
           children: [
             TextField(
               autofocus: true,
-              style: GoogleFonts.outfit(color: AppColors.textPrimary),
+              style: GoogleFonts.outfit(color: c.textPrimary),
               decoration: const InputDecoration(
                 hintText: 'İsim veya telefon ara...',
                 prefixIcon: Icon(Icons.search_rounded, size: 18),
@@ -1132,24 +1154,24 @@ class _CariPickerDialogState extends State<_CariPickerDialog> {
               child: _filtered.isEmpty
                   ? Center(
                       child: Text('Müşteri bulunamadı',
-                        style: GoogleFonts.outfit(color: AppColors.textSecondary)))
+                        style: GoogleFonts.outfit(color: c.textSecondary)))
                   : ListView.builder(
                       itemCount: _filtered.length,
                       itemBuilder: (_, i) {
-                        final c = _filtered[i];
+                        final cari = _filtered[i];
                         return ListTile(
-                          onTap: () => Navigator.pop(context, c),
-                          title: Text(c.ad,
+                          onTap: () => Navigator.pop(context, cari),
+                          title: Text(cari.ad,
                             style: GoogleFonts.outfit(
-                              color: AppColors.textPrimary,
+                              color: c.textPrimary,
                               fontWeight: FontWeight.w600)),
-                          subtitle: c.telefon != null
-                              ? Text(c.telefon!,
+                          subtitle: cari.telefon != null
+                              ? Text(cari.telefon!,
                                   style: GoogleFonts.outfit(
-                                    color: AppColors.textSecondary, fontSize: 12))
+                                    color: c.textSecondary, fontSize: 12))
                               : null,
-                          trailing: c.alacaklimi
-                              ? Text(_fmtMoney.format(c.bakiye),
+                          trailing: cari.alacaklimi
+                              ? Text(_fmtMoney.format(cari.bakiye),
                                   style: GoogleFonts.dmMono(
                                     color: AppColors.accentRed, fontSize: 12))
                               : const Icon(Icons.check_circle_rounded,
@@ -1164,7 +1186,7 @@ class _CariPickerDialogState extends State<_CariPickerDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('İptal', style: TextStyle(color: AppColors.textSecondary)),
+          child: Text('İptal', style: TextStyle(color: c.textSecondary)),
         ),
       ],
     );

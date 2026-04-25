@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-import 'core/constants/app_colors.dart';
+import 'core/theme/app_theme_data.dart';
+import 'core/theme/theme_provider.dart';
 import 'features/cari/viewmodel/cari_viewmodel.dart';
+import 'features/rapor/viewmodel/rapor_viewmodel.dart';
+import 'features/urun/viewmodel/urun_viewmodel.dart';
 import 'features/dashboard/viewmodel/dashboard_viewmodel.dart';
 import 'features/gider/viewmodel/gider_viewmodel.dart';
 import 'features/terminal/viewmodel/terminal_viewmodel.dart';
@@ -21,76 +23,39 @@ void main() async {
   // tr_TR locale için DateFormat başlatma
   await initializeDateFormatting('tr_TR');
 
-  runApp(const LiqraTerminalApp());
+  // Tema tercihini SharedPreferences'tan yükle
+  final themeProvider = ThemeProvider();
+  await themeProvider.init();
+
+  runApp(LiqraTerminalApp(themeProvider: themeProvider));
 }
 
 class LiqraTerminalApp extends StatelessWidget {
-  const LiqraTerminalApp({super.key});
+  final ThemeProvider themeProvider;
+  const LiqraTerminalApp({super.key, required this.themeProvider});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        // Tema — en üstte olmalı, diğer ekranlar tüketir
+        ChangeNotifierProvider<ThemeProvider>.value(value: themeProvider),
         ChangeNotifierProvider(create: (_) => TerminalViewModel()),
         ChangeNotifierProvider(create: (_) => CariViewModel()),
         ChangeNotifierProvider(create: (_) => GiderViewModel()),
         ChangeNotifierProvider(create: (_) => DashboardViewModel()),
+        ChangeNotifierProvider(create: (_) => RaporViewModel()),
+        ChangeNotifierProvider(create: (_) => UrunViewModel()),
       ],
-      child: MaterialApp(
-        title: 'Liqra Terminal Pro',
-        debugShowCheckedModeBanner: false,
-        theme: _buildTheme(),
-        home: const AppShell(),
-      ),
-    );
-  }
-
-  ThemeData _buildTheme() {
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: AppColors.bgPrimary,
-      colorScheme: const ColorScheme.dark(
-        primary:   AppColors.teal,
-        secondary: AppColors.gold,
-        surface:   AppColors.bgCard,
-        error:     AppColors.accentRed,
-      ),
-      textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
-      inputDecorationTheme: InputDecorationTheme(
-        filled:      true,
-        fillColor:   AppColors.bgCard,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: AppColors.border),
+      child: Consumer<ThemeProvider>(
+        builder: (_, tp, __) => MaterialApp(
+          title: 'Liqra Terminal Pro',
+          debugShowCheckedModeBanner: false,
+          theme:      AppThemeData.light(),
+          darkTheme:  AppThemeData.dark(),
+          themeMode:  tp.mode,
+          home: const AppShell(),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: AppColors.teal),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      ),
-      chipTheme: ChipThemeData(
-        backgroundColor: AppColors.bgCard,
-        selectedColor:   AppColors.teal.withAlpha(40),
-        side: const BorderSide(color: AppColors.border),
-        labelStyle: GoogleFonts.outfit(color: AppColors.textSecondary, fontSize: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      ),
-      dividerTheme: const DividerThemeData(
-        color:     AppColors.border,
-        thickness: 0.5,
-      ),
-      tabBarTheme: TabBarThemeData(
-        indicatorColor:       AppColors.teal,
-        labelColor:           AppColors.teal,
-        unselectedLabelColor: AppColors.textSecondary,
-        labelStyle:           GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13),
-        unselectedLabelStyle: GoogleFonts.outfit(fontSize: 13),
       ),
     );
   }

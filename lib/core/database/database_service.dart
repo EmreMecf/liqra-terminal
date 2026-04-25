@@ -3,6 +3,7 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../features/rapor/data/models/rapor_models.dart';
 import '../../features/terminal/data/models/cari_hareket_model.dart';
 import '../../features/terminal/data/models/cari_model.dart';
 import '../../features/terminal/data/models/gider_model.dart';
@@ -550,12 +551,166 @@ class DatabaseService {
     return rows.map(GiderModel.fromMap).toList();
   }
 
+  // ══════════════════════════════════════════════════════════════════════════
+  // RAPOR SORGULARI
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /// Tarih aralığına göre satışları getirir (opsiyonel ödeme tipi filtresi)
+  Future<List<SaleModel>> satisByAralik({
+    required DateTime baslangic,
+    required DateTime bitis,
+    OdemeTip? odemeTip,
+  }) async {
+    final database = await db;
+    final args = <dynamic>[
+      baslangic.toIso8601String(),
+      bitis.toIso8601String(),
+    ];
+    String where = 'tarih >= ? AND tarih <= ?';
+    if (odemeTip != null) {
+      where += ' AND odeme_tip = ?';
+      args.add(odemeTip.index);
+    }
+    final rows = await database.query(
+      'satislar',
+      where:     where,
+      whereArgs: args,
+      orderBy:   'tarih DESC',
+    );
+    return rows.map(SaleModel.fromMap).toList();
+  }
+
+  /// Bir günün saatlik satış dağılımı (0–23 arası mevcut saatler döner)
+  Future<List<SaatlikOzet>> saatlikDagilim(DateTime gun) async {
+    final database = await db;
+    final bas = DateTime(gun.year, gun.month, gun.day);
+    final bit = DateTime(gun.year, gun.month, gun.day, 23, 59, 59);
+
+    final rows = await database.rawQuery('''
+      SELECT
+        CAST(strftime('%H', tarih) AS INTEGER) AS saat,
+        COUNT(*)                               AS satis_sayisi,
+        COALESCE(SUM(toplam), 0)               AS ciro
+      FROM satislar
+      WHERE tarih >= ? AND tarih <= ?
+      GROUP BY saat
+      ORDER BY saat
+    ''', [bas.toIso8601String(), bit.toIso8601String()]);
+
+    return rows
+        .map((r) => SaatlikOzet(
+              saat:        r['saat']        as int,
+              satisSayisi: r['satis_sayisi'] as int,
+              ciro:        (r['ciro']       as num).toDouble(),
+            ))
+        .toList();
+  }
+
+  /// Bir ayın günlük ciro listesi
+  Future<List<GunlukOzet>> gunlukCiroListesi(int yil, int ay) async {
+    final database = await db;
+    final basKey = '$yil-${ay.toString().padLeft(2, '0')}-01';
+    // Bir sonraki ayın ilk günü (ay taşmasını DateTime halleder)
+    final bitTmp = DateTime(yil, ay + 1, 1);
+    final bitKey =
+        '${bitTmp.year}-${bitTmp.month.toString().padLeft(2, '0')}-01';
+
+    final rows = await database.rawQuery('''
+      SELECT
+        tarih_key                        AS gun,
+        COUNT(*)                         AS satis_sayisi,
+        COALESCE(SUM(toplam),      0)    AS ciro,
+        COALESCE(SUM(kar_toplami), 0)    AS kar
+      FROM satislar
+      WHERE tarih_key >= ? AND tarih_key < ?
+      GROUP BY tarih_key
+      ORDER BY tarih_key
+    ''', [basKey, bitKey]);
+
+    return rows
+        .map((r) => GunlukOzet(
+              gun:         r['gun']          as String,
+              satisSayisi: r['satis_sayisi'] as int,
+              ciro:        (r['ciro']        as num).toDouble(),
+              kar:         (r['kar']         as num).toDouble(),
+            ))
+        .toList();
+  }
+
+  /// Bir yılın aylık performans raporu (1–12)
+  Future<List<AylikOzet>> aylikPerformans(int yil) async {
+    final database = await db;
+
+    final rows = await database.rawQuery('''
+      SELECT
+        CAST(strftime('%m', tarih) AS INTEGER) AS ay,
+        COUNT(*)                               AS satis_sayisi,
+        COALESCE(SUM(toplam),      0)          AS ciro,
+        COALESCE(SUM(kar_toplami), 0)          AS kar
+      FROM satislar
+      WHERE strftime('%Y', tarih) = ?
+      GROUP BY ay
+      ORDER BY ay
+    ''', [yil.toString()]);
+
+    return rows
+        .map((r) => AylikOzet(
+              ay:          r['ay']          as int,
+              satisSayisi: r['satis_sayisi'] as int,
+              ciro:        (r['ciro']       as num).toDouble(),
+              kar:         (r['kar']        as num).toDouble(),
+            ))
+        .toList();
+  }
+
   // CRUD — Ürün
   Future<void> urunEkle(ProductModel p) async =>
       (await db).insert('urunler', p.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
 
   Future<void> urunGuncelle(ProductModel p) async =>
       (await db).update('urunler', p.toMap(), where: 'id = ?', whereArgs: [p.id]);
+
+  /// Ürünü pasif yapar (fiziksel silmez — satış geçmişi korunur)
+  Future<void> urunDeaktive(String id) async =>
+      (await db).update('urunler', {'aktif': 0}, where: 'id = ?', whereArgs: [id]);
+
+  /// Toplu ürün aktarımı — CSV import için.
+  /// [guncelle] = true → barkod çakışmasında mevcut ürünü günceller
+  /// Döner: {'eklenen': n, 'guncellenen': n, 'atlanan': n}
+  Future<Map<String, int>> topluUrunImport(
+    List<ProductModel> urunler, {
+    bool guncelle = true,
+  }) async {
+    final database = await db;
+    int eklenen = 0, guncellenen = 0, atlanan = 0;
+
+    await database.transaction((txn) async {
+      for (final p in urunler) {
+        // Barkod çakışması var mı?
+        final mevcut = await txn.query(
+          'urunler', where: 'barkod = ?', whereArgs: [p.barkod], limit: 1);
+
+        if (mevcut.isEmpty) {
+          await txn.insert('urunler', p.toMap(),
+              conflictAlgorithm: ConflictAlgorithm.ignore);
+          eklenen++;
+        } else if (guncelle) {
+          // id'yi mevcut kayıttan al, diğer alanları güncelle
+          final mevcutId = mevcut.first['id'] as String;
+          await txn.update(
+            'urunler',
+            p.copyWith(id: mevcutId).toMap(),
+            where: 'id = ?', whereArgs: [mevcutId],
+          );
+          guncellenen++;
+        } else {
+          atlanan++;
+        }
+      }
+    });
+
+    return {'eklenen': eklenen, 'guncellenen': guncellenen, 'atlanan': atlanan};
+  }
 
   // CRUD — Cari
   Future<void> cariEkle(CariModel c) async =>

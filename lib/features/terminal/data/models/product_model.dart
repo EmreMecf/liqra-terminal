@@ -68,24 +68,40 @@ class ProductModel {
   bool   get stokKritik    => stok > 0 && stok <= kritikStok;
   bool   get stokTukendi   => stok <= 0;
 
-  ProductModel copyWith({int? stok, int? toplamSatilan, double? satisFiyati, double? alisFiyati}) =>
-    ProductModel(
-      id: id, ad: ad, barkod: barkod, kategori: kategori,
-      satisFiyati:   satisFiyati   ?? this.satisFiyati,
-      alisFiyati:    alisFiyati    ?? this.alisFiyati,
-      stok:          stok          ?? this.stok,
-      kritikStok:    kritikStok,
-      birim:         birim,
-      tedarikciId:   tedarikciId,
-      toplamSatilan: toplamSatilan ?? this.toplamSatilan,
-      aktif:         aktif,
-    );
+  ProductModel copyWith({
+    String?  id,
+    String?  ad,
+    String?  barkod,
+    String?  kategori,
+    double?  satisFiyati,
+    double?  alisFiyati,
+    int?     stok,
+    int?     kritikStok,
+    String?  birim,
+    String?  tedarikciId,
+    int?     toplamSatilan,
+    bool?    aktif,
+  }) => ProductModel(
+    id:            id            ?? this.id,
+    ad:            ad            ?? this.ad,
+    barkod:        barkod        ?? this.barkod,
+    kategori:      kategori      ?? this.kategori,
+    satisFiyati:   satisFiyati   ?? this.satisFiyati,
+    alisFiyati:    alisFiyati    ?? this.alisFiyati,
+    stok:          stok          ?? this.stok,
+    kritikStok:    kritikStok    ?? this.kritikStok,
+    birim:         birim         ?? this.birim,
+    tedarikciId:   tedarikciId  ?? this.tedarikciId,
+    toplamSatilan: toplamSatilan ?? this.toplamSatilan,
+    aktif:         aktif         ?? this.aktif,
+  );
 
   // Eski alan adlarıyla uyumluluk
-  double get price      => satisFiyati;
-  String get name       => ad;
-  String get barcode    => barkod;
-  String get category   => kategori;
-  bool   get isLowStock  => stokKritik;
-  bool   get isOutOfStock=> stokTukendi;
+  double get price        => satisFiyati;
+  String get name         => ad;
+  String get barcode      => barkod;
+  String get category     => kategori;
+  int    get stock        => stok;
+  bool   get isLowStock   => stokKritik;
+  bool   get isOutOfStock => stokTukendi;
 }
