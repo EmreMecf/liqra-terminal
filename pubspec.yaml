@@ -29,6 +29,10 @@ dependencies:
   pdf: ^3.11.1
   printing: ^5.14.2
 
+  # HTTP / Network
+  dio: ^5.8.0
+  connectivity_plus: ^6.1.1
+
   # Utils
   intl: ^0.20.2
   uuid: ^4.5.1

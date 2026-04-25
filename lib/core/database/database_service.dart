@@ -157,6 +157,20 @@ class DatabaseService {
       )
     ''');
 
+    // Senkronizasyon Kuyruğu (Offline-First)
+    await db.execute('''
+      CREATE TABLE sync_queue (
+        id                    TEXT PRIMARY KEY,
+        tablo_adi             TEXT NOT NULL,
+        islem_tipi            TEXT NOT NULL,
+        veri_json             TEXT NOT NULL,
+        tarih                 TEXT NOT NULL,
+        senkronize_edildi_mi  INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_sync_queue_status ON sync_queue(senkronize_edildi_mi)');
+    await db.execute('CREATE INDEX idx_sync_queue_tarih ON sync_queue(tarih)');
+
     // Varsayılan kasaları ekle
     await _seedKasalar(db);
   }
@@ -207,6 +221,16 @@ class DatabaseService {
         tarih:      now,
       );
       await txn.insert('satislar', sale.toMap());
+
+      // ► Senkronizasyon kuyruğuna ekle (Offline-First)
+      await txn.insert('sync_queue', {
+        'id':                   _uuid.v4(),
+        'tablo_adi':            'satislar',
+        'islem_tipi':           'insert',
+        'veri_json':            _serializeToJson(sale.toMap()),
+        'tarih':                now.toIso8601String(),
+        'senkronize_edildi_mi': 0,
+      });
 
       // 2) Stok & StokHareket
       for (final kalem in kalemler) {
@@ -718,4 +742,129 @@ class DatabaseService {
 
   Future<void> cariGuncelle(CariModel c) async =>
       (await db).update('cariler', c.toMap(), where: 'id = ?', whereArgs: [c.id]);
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // SYNC QUEUE METHODS — Query & Status Management
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /// Senkronize edilmemiş tüm işlemleri getirir
+  Future<List<Map<String, dynamic>>> bekleyenSyncOperations() async {
+    final database = await db;
+    return await database.query(
+      'sync_queue',
+      where: 'senkronize_edildi_mi = 0',
+      orderBy: 'tarih ASC',
+    );
+  }
+
+  /// Belirtilen sync_queue kaydını senkronize edildi olarak işaretle
+  Future<void> syncKaydiTamamla(String syncQueueId) async {
+    final database = await db;
+    await database.update(
+      'sync_queue',
+      {'senkronize_edildi_mi': 1},
+      where: 'id = ?',
+      whereArgs: [syncQueueId],
+    );
+  }
+
+  /// Senkronize edilen kaydları temizle (opsiyonel — veritabanı boyutu kontrolü için)
+  Future<void> temizleSenkronizeEdilmis() async {
+    final database = await db;
+    await database.delete('sync_queue', where: 'senkronize_edildi_mi = 1');
+  }
+
+  /// Sync queue durumunu kontrol et (bekleyen işlem sayısı)
+  Future<int> bekleyenSyncSayisi() async {
+    final database = await db;
+    final result = await database.rawQuery(
+      'SELECT COUNT(*) as sayi FROM sync_queue WHERE senkronize_edildi_mi = 0');
+    return result.isNotEmpty ? (result.first['sayi'] as int) : 0;
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // SYNC QUEUE HELPER — JSON Serialization
+  // ══════════════════════════════════════════════════════════════════════════
+
+  String _serializeToJson(Map<String, dynamic> data) {
+    // Recast DateTime strings ve özel alanları JSON-safe format'a dönüştür
+    final jsonData = data.map((key, value) {
+      if (value is DateTime) {
+        return MapEntry(key, value.toIso8601String());
+      } else if (value is List) {
+        // SatisKalemi nesnelerini Map'e dönüştür
+        return MapEntry(
+          key,
+          value
+              .map((item) => item is SatisKalemi ? item.toMap() : item)
+              .toList(),
+        );
+      }
+      return MapEntry(key, value);
+    });
+
+    // dart:convert'i kullanmak için inline JSON encoding
+    return _mapToJsonString(jsonData);
+  }
+
+  String _mapToJsonString(Map<String, dynamic> map) {
+    final buffer = StringBuffer('{');
+    final entries = map.entries.toList();
+
+    for (int i = 0; i < entries.length; i++) {
+      final entry = entries[i];
+      buffer.write('"${entry.key}":');
+
+      if (entry.value == null) {
+        buffer.write('null');
+      } else if (entry.value is String) {
+        buffer.write('"${_escapeJson(entry.value)}"');
+      } else if (entry.value is List) {
+        buffer.write(_listToJsonString(entry.value));
+      } else if (entry.value is Map) {
+        buffer.write(_mapToJsonString(entry.value as Map<String, dynamic>));
+      } else {
+        buffer.write(entry.value);
+      }
+
+      if (i < entries.length - 1) buffer.write(',');
+    }
+
+    buffer.write('}');
+    return buffer.toString();
+  }
+
+  String _listToJsonString(List list) {
+    final buffer = StringBuffer('[');
+
+    for (int i = 0; i < list.length; i++) {
+      final item = list[i];
+
+      if (item == null) {
+        buffer.write('null');
+      } else if (item is String) {
+        buffer.write('"${_escapeJson(item)}"');
+      } else if (item is Map) {
+        buffer.write(_mapToJsonString(item as Map<String, dynamic>));
+      } else if (item is List) {
+        buffer.write(_listToJsonString(item));
+      } else {
+        buffer.write(item);
+      }
+
+      if (i < list.length - 1) buffer.write(',');
+    }
+
+    buffer.write(']');
+    return buffer.toString();
+  }
+
+  String _escapeJson(String str) {
+    return str
+        .replaceAll('\\', '\\\\')
+        .replaceAll('"', '\\"')
+        .replaceAll('\n', '\\n')
+        .replaceAll('\r', '\\r')
+        .replaceAll('\t', '\\t');
+  }
 }
